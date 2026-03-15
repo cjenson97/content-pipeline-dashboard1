@@ -450,7 +450,84 @@ else:
     st.divider()
 
     h1, h2 = st.columns(2)
+  h1, h2 = st.columns(2)
     with h1:
         st.markdown(f'<div class="compare-header">🅐 {a["label"]}</div>', unsafe_allow_html=True)
     with h2:
-        st.markdown(f'<div class="compare-header">🅑 {b["label"]}</div>', unsafe
+        st.markdown(f'<div class="compare-header">🅑 {b["label"]}</div>', unsafe_allow_html=True)
+
+    def kpi_card(label, val_a, val_b, unit="", higher_is_better=True, color="#6366f1"):
+        diff = round(val_b - val_a, 1)
+        if diff > 0:
+            arrow = "▲" if higher_is_better else "▼"
+            diff_color = "#10b981" if higher_is_better else "#ef4444"
+        elif diff < 0:
+            arrow = "▼" if higher_is_better else "▲"
+            diff_color = "#ef4444" if higher_is_better else "#10b981"
+        else:
+            arrow, diff_color = "→", "#94a3b8"
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown(f'<div class="metric-card" style="border-left:4px solid {color};"><div class="metric-label">{label}</div><div class="metric-value" style="color:{color};">{val_a}{unit}</div></div>', unsafe_allow_html=True)
+        with c2:
+            st.markdown(f'<div class="metric-card" style="border-left:4px solid {color};"><div class="metric-value" style="color:{color};">{val_b}{unit}</div><div class="metric-sub" style="color:{diff_color};font-weight:700;">{arrow} {abs(diff)}{unit} vs Period A</div></div>', unsafe_allow_html=True)
+
+    kpi_card("Total Articles",  a["total"],   b["total"],   higher_is_better=True,  color="#6366f1")
+    kpi_card("Success Rate",    sr_a,         sr_b,         unit="%", higher_is_better=True,  color="#10b981")
+    kpi_card("Error Rate",      er_a,         er_b,         unit="%", higher_is_better=False, color="#ef4444")
+    kpi_card("Failed Articles", a["failed"],  b["failed"],  higher_is_better=False, color="#ef4444")
+    kpi_card("Bot Errors",      a["bot"],     b["bot"],     higher_is_better=False, color="#ef4444")
+    kpi_card("PDF Timeouts",    a["pdf"],     b["pdf"],     higher_is_better=False, color="#f59e0b")
+    kpi_card("CAPTCHA Errors",  a["captcha"], b["captcha"], higher_is_better=False, color="#8b5cf6")
+
+    st.divider()
+
+    ch1, ch2 = st.columns(2)
+    for col, d, lbl in [(ch1, a, "A"), (ch2, b, "B")]:
+        with col:
+            st.plotly_chart(make_bar(d, f"Period {lbl} — {d['label']}"), use_container_width=True)
+
+    st.divider()
+
+    # Auto-generated summary
+    st.markdown("### 📝 Comparison Summary")
+
+    def trend(val_a, val_b, higher_is_better=True):
+        if val_b > val_a:
+            return ("improved", "up") if higher_is_better else ("worsened", "down")
+        elif val_b < val_a:
+            return ("declined", "down") if higher_is_better else ("improved", "up")
+        return ("unchanged", "same")
+
+    vol_trend,  vol_cls  = trend(a["total"],   b["total"])
+    sr_trend,   sr_cls   = trend(sr_a,          sr_b)
+    er_trend,   er_cls   = trend(er_a,          er_b,   higher_is_better=False)
+    bot_trend,  bot_cls  = trend(a["bot"],      b["bot"],     higher_is_better=False)
+    pdf_trend,  pdf_cls  = trend(a["pdf"],      b["pdf"],     higher_is_better=False)
+    cap_trend,  cap_cls  = trend(a["captcha"],  b["captcha"], higher_is_better=False)
+
+    def fmt_diff(val, cls):
+        sign = "+" if val > 0 else ""
+        return f'<span class="{cls}">{sign}{val}</span>'
+
+    vol_diff = b["total"]   - a["total"]
+    sr_diff  = round(sr_b   - sr_a,  1)
+    er_diff  = round(er_b   - er_a,  1)
+    bot_diff = b["bot"]     - a["bot"]
+    pdf_diff = b["pdf"]     - a["pdf"]
+    cap_diff = b["captcha"] - a["captcha"]
+
+    summary_html = f"""
+<div class="summary-box">
+<strong>Period A:</strong> {a['label']} &nbsp;|&nbsp; <strong>Period B:</strong> {b['label']}<br><br>
+📦 <strong>Volume:</strong> Output {vol_trend} from <strong>{a['total']}</strong> to <strong>{b['total']}</strong> ({fmt_diff(vol_diff, vol_cls)} articles).<br><br>
+✅ <strong>Success Rate:</strong> {sr_trend.capitalize()} from <strong>{sr_a}%</strong> to <strong>{sr_b}%</strong> ({fmt_diff(sr_diff, sr_cls)}pp) — {'pipeline reliability is increasing.' if sr_cls=='up' else 'success rate fell, worth investigating.' if sr_cls=='down' else 'no change in reliability.'}<br><br>
+❌ <strong>Error Rate:</strong> {er_trend.capitalize()} from <strong>{er_a}%</strong> to <strong>{er_b}%</strong> ({fmt_diff(er_diff, er_cls)}pp).<br><br>
+🤖 <strong>Bot Protection</strong> {bot_trend} from <strong>{a['bot']}</strong> to <strong>{b['bot']}</strong> ({fmt_diff(bot_diff, bot_cls)}) — {'remains the top error driver.' if b['bot'] > b['pdf'] and b['bot'] > b['captcha'] else 'no longer the top error driver.'}<br><br>
+🟡 <strong>PDF Timeouts</strong> {pdf_trend} ({fmt_diff(pdf_diff, pdf_cls)}) &nbsp;·&nbsp; 🟣 <strong>CAPTCHA</strong> {cap_trend} ({fmt_diff(cap_diff, cap_cls)}).<br><br>
+{'⚠️ <strong>Watch:</strong> Error rate increased period-on-period.' if er_cls=='down' else '✅ <strong>Positive:</strong> Overall pipeline performance improved.' if sr_cls=='up' else '➡️ Performance was broadly stable between these two periods.'}
+</div>"""
+
+    st.markdown(summary_html, unsafe_allow_html=True)
+
+    render_export([a, b], f"{a['label']} vs {b['label']}", summary_html)
