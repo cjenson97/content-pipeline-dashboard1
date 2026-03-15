@@ -565,3 +565,4 @@ else:
 </div>"""
 
     st.markdown(summary_html, unsafe_allow_html=True)
+    
