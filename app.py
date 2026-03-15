@@ -10,239 +10,23 @@ st.set_page_config(
     layout="wide"
 )
 
-# ── Dark mode state ───────────────────────────────────────────────────────────
-if "dark_mode" not in st.session_state:
-    st.session_state.dark_mode = False
-
-# ── Theme CSS injection ───────────────────────────────────────────────────────
-dark = st.session_state.dark_mode
-
-if dark:
-    bg_main       = "#0f172a"
-    bg_card       = "#1e293b"
-    bg_card_hover = "#334155"
-    border_color  = "#334155"
-    text_primary  = "#f1f5f9"
-    text_secondary= "#94a3b8"
-    text_muted    = "#64748b"
-    divider_color = "#334155"
-    table_head_bg = "#1e293b"
-    table_head_fg = "#94a3b8"
-    table_row_alt = "#1e293b"
-    summary_bg    = "#0c2231"
-    summary_border= "#1e4a66"
-    success_bg    = "#052e16"
-    error_bg      = "#1c0a0a"
-    warning_bg    = "#1c1200"
-    plotly_paper  = "rgba(15,23,42,0)"
-    plotly_plot   = "rgba(15,23,42,0)"
-    grid_color    = "#1e293b"
-    compare_header= "#0f172a"
-else:
-    bg_main       = "#ffffff"
-    bg_card       = "#f8fafc"
-    bg_card_hover = "#f1f5f9"
-    border_color  = "#e2e8f0"
-    text_primary  = "#0f172a"
-    text_secondary= "#475569"
-    text_muted    = "#94a3b8"
-    divider_color = "#e2e8f0"
-    table_head_bg = "#f1f5f9"
-    table_head_fg = "#64748b"
-    table_row_alt = "#f8fafc"
-    summary_bg    = "#f0f9ff"
-    summary_border= "#bae6fd"
-    success_bg    = "#f0fdf4"
-    error_bg      = "#fef2f2"
-    warning_bg    = "#fffbeb"
-    plotly_paper  = "rgba(0,0,0,0)"
-    plotly_plot   = "rgba(0,0,0,0)"
-    grid_color    = "#f1f5f9"
-    compare_header= "#1e293b"
-
-st.markdown(f"""
+st.markdown("""
 <style>
-    /* ── Global overrides ── */
-    .stApp {{
-        background-color: {bg_main} !important;
-    }}
-    .stApp > header {{
-        background-color: {bg_main} !important;
-    }}
-    /* Main content area */
-    section[data-testid="stMain"] {{
-        background-color: {bg_main} !important;
-    }}
-    section[data-testid="stMain"] > div {{
-        background-color: {bg_main} !important;
-    }}
-    /* Sidebar */
-    section[data-testid="stSidebar"] {{
-        background-color: {bg_card} !important;
-    }}
-    /* All text */
-    .stApp p, .stApp span, .stApp label, .stApp div,
-    .stMarkdown, .stMarkdown p, .stMarkdown span {{
-        color: {text_primary} !important;
-    }}
-    h1, h2, h3, h4, h5, h6 {{
-        color: {text_primary} !important;
-    }}
-    /* Radio buttons */
-    .stRadio label span {{
-        color: {text_primary} !important;
-    }}
-    /* Selectbox */
-    .stSelectbox > div > div {{
-        background-color: {bg_card} !important;
-        border-color: {border_color} !important;
-        color: {text_primary} !important;
-    }}
-    .stSelectbox svg {{
-        fill: {text_secondary} !important;
-    }}
-    /* Selectbox dropdown options */
-    [data-baseweb="select"] > div {{
-        background-color: {bg_card} !important;
-        border-color: {border_color} !important;
-        color: {text_primary} !important;
-    }}
-    [data-baseweb="popover"] ul {{
-        background-color: {bg_card} !important;
-    }}
-    [data-baseweb="popover"] li {{
-        background-color: {bg_card} !important;
-        color: {text_primary} !important;
-    }}
-    [data-baseweb="popover"] li:hover {{
-        background-color: {bg_card_hover} !important;
-    }}
-    /* Dividers */
-    hr {{
-        border-color: {divider_color} !important;
-        opacity: 1 !important;
-    }}
-    /* Info / success / error boxes */
-    .stAlert {{
-        background-color: {bg_card} !important;
-        border-color: {border_color} !important;
-        color: {text_primary} !important;
-    }}
-    /* ── Slider toggle ── */
-    .toggle-wrap {{
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        justify-content: flex-end;
-        padding-top: 6px;
-        cursor: pointer;
-        user-select: none;
-    }}
-    .toggle-icon {{
-        font-size: 14px;
-        line-height: 1;
-    }}
-    .toggle-track {{
-        position: relative;
-        width: 44px;
-        height: 24px;
-        background: {"#6366f1" if dark else "#cbd5e1"};
-        border-radius: 999px;
-        transition: background 0.25s ease;
-        flex-shrink: 0;
-    }}
-    .toggle-thumb {{
-        position: absolute;
-        top: 3px;
-        left: {"calc(100% - 21px)" if dark else "3px"};
-        width: 18px;
-        height: 18px;
-        background: #ffffff;
-        border-radius: 50%;
-        transition: left 0.25s ease;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.25);
-    }}
-    /* hide the real streamlit button but keep it clickable */
-    div[data-testid="stButton"] button#theme_toggle_real {{
-        opacity: 0 !important;
-        position: absolute !important;
-        pointer-events: none !important;
-        width: 1px !important;
-        height: 1px !important;
-    }}
-    /* Metric cards */
-    .metric-card {{
-        background: {bg_card};
-        border: 1px solid {border_color};
+    .metric-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
         border-radius: 12px;
         padding: 16px;
         text-align: center;
-    }}
-    .metric-label {{
-        font-size: 10px;
-        font-weight: 700;
-        color: {text_muted};
-        text-transform: uppercase;
-        letter-spacing: .08em;
-    }}
-    .metric-value {{
-        font-size: 2rem;
-        font-weight: 900;
-        margin: 4px 0;
-    }}
-    .metric-sub {{ font-size: 11px; color: {text_muted}; }}
-    .compare-header {{
-        background: {compare_header};
-        color: #fff;
-        padding: 8px 14px;
-        border-radius: 8px;
-        font-size: 12px;
-        font-weight: 700;
-        text-align: center;
-        margin-bottom: 10px;
-    }}
-    .summary-box {{
-        background: {summary_bg};
-        border: 1px solid {summary_border};
-        border-radius: 12px;
-        padding: 16px 20px;
-        font-size: 13px;
-        line-height: 1.8;
-        color: {text_primary};
-    }}
-    .up   {{ color:#10b981; font-weight:700; }}
-    .down {{ color:#ef4444; font-weight:700; }}
-    .same {{ color:{text_muted}; font-weight:700; }}
-
-    /* Error table rows */
-    .row-success {{ background: {success_bg} !important; }}
-    .row-error   {{ background: {error_bg}   !important; }}
-    .row-warning {{ background: {warning_bg} !important; }}
-    .row-purple  {{ background: {"#1a0a2e" if dark else "#faf5ff"} !important; }}
-    .row-neutral {{ background: {bg_card}    !important; }}
-
-    table.detail-table {{
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 13px;
-        color: {text_primary};
-    }}
-    table.detail-table thead tr {{
-        background: {table_head_bg};
-        color: {table_head_fg};
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: .06em;
-    }}
-    table.detail-table th,
-    table.detail-table td {{
-        padding: 10px 14px;
-        border-bottom: 1px solid {border_color};
-    }}
-    table.detail-table th {{ text-align: left; }}
-    table.detail-table td:nth-child(2),
-    table.detail-table td:nth-child(3) {{ text-align: right; }}
+    }
+    .metric-label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .08em; }
+    .metric-value { font-size: 2rem; font-weight: 900; margin: 4px 0; }
+    .metric-sub   { font-size: 11px; color: #94a3b8; }
+    .compare-header { background:#1e293b; color:#fff; padding:8px 14px; border-radius:8px; font-size:12px; font-weight:700; text-align:center; margin-bottom:10px; }
+    .summary-box { background:#f0f9ff; border:1px solid #bae6fd; border-radius:12px; padding:16px 20px; font-size:13px; line-height:1.8; }
+    .up   { color:#10b981; font-weight:700; }
+    .down { color:#ef4444; font-weight:700; }
+    .same { color:#64748b; font-weight:700; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -296,46 +80,14 @@ def captcha_pct(d):  return round(d["captcha"] / d["failed"] * 100, 1) if d["fai
 def pdf_pct(d):      return round(d["pdf"]     / d["failed"] * 100, 1) if d["failed"] > 0 else 0
 def generic_pct(d):  return round(d["generic"] / d["failed"] * 100, 1) if d["failed"] > 0 else 0
 
-# ── Header + Toggle ───────────────────────────────────────────────────────────
-header_col, toggle_col = st.columns([5, 1])
-with header_col:
-    st.markdown("## 📊 Content Pipeline · Executive Dashboard")
-    st.markdown(f"*Generated {date.today().strftime('%d %B %Y')} · Live data refreshes every 60 seconds*")
-with toggle_col:
-    # Invisible real button that Streamlit handles
-    if st.button("toggle", key="theme_toggle", label_visibility="collapsed"):
-        st.session_state.dark_mode = not st.session_state.dark_mode
-        st.rerun()
-    # Visual slider toggle — clicking it triggers the hidden button via JS
-    st.markdown(f"""
-<div class="toggle-wrap" onclick="
-  const btns = window.parent.document.querySelectorAll('button');
-  for (const b of btns) {{
-    if (b.innerText.trim() === 'toggle') {{ b.click(); break; }}
-  }}
-">
-  <span class="toggle-icon">☀️</span>
-  <div class="toggle-track"><div class="toggle-thumb"></div></div>
-  <span class="toggle-icon">🌙</span>
-</div>
-""", unsafe_allow_html=True)
-
+# ── Header ────────────────────────────────────────────────────────────────────
+st.markdown("## 📊 Content Pipeline · Executive Dashboard")
+st.markdown(f"*Generated {date.today().strftime('%d %B %Y')} · Live data refreshes every 60 seconds*")
 st.divider()
 
 # ── Mode toggle ───────────────────────────────────────────────────────────────
 mode = st.radio("**View mode**", ["Single Period", "Compare Two Periods"], horizontal=True)
 st.divider()
-
-# ── Plotly layout helper ──────────────────────────────────────────────────────
-def plotly_base_layout(**kwargs):
-    return dict(
-        paper_bgcolor=plotly_paper,
-        plot_bgcolor=plotly_plot,
-        font=dict(color=text_primary),
-        yaxis=dict(gridcolor=grid_color, color=text_secondary),
-        xaxis=dict(gridcolor=grid_color, color=text_secondary),
-        **kwargs
-    )
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # SINGLE PERIOD VIEW
@@ -385,8 +137,7 @@ if mode == "Single Period":
             y=[d["success"],d["bot"],d["captcha"],d["pdf"],d["generic"]],
             marker_color=["#10b981","#ef4444","#8b5cf6","#f59e0b","#6b7280"]
         ))
-        bar.update_layout(margin=dict(t=10,b=10,l=0,r=0), height=250, showlegend=False,
-                          **plotly_base_layout())
+        bar.update_layout(margin=dict(t=10,b=10,l=0,r=0),height=250,paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",showlegend=False,yaxis=dict(gridcolor="#f1f5f9"))
         st.plotly_chart(bar, use_container_width=True)
     with col_donut:
         st.markdown("**Distribution**")
@@ -395,10 +146,7 @@ if mode == "Single Period":
             values=[d["success"],d["bot"],d["pdf"],d["captcha"],d["generic"]],
             hole=0.6, marker_colors=["#10b981","#ef4444","#f59e0b","#8b5cf6","#6b7280"]
         ))
-        donut.update_layout(margin=dict(t=10,b=10,l=0,r=0), height=250,
-                            paper_bgcolor=plotly_paper,
-                            font=dict(color=text_primary),
-                            legend=dict(font=dict(size=10, color=text_primary)))
+        donut.update_layout(margin=dict(t=10,b=10,l=0,r=0),height=250,paper_bgcolor="rgba(0,0,0,0)",legend=dict(font=dict(size=10)))
         st.plotly_chart(donut, use_container_width=True)
 
     st.divider()
@@ -411,10 +159,7 @@ if mode == "Single Period":
     fig_line.add_trace(go.Scatter(name="PDF Timeout",      x=wl, y=[w["pdf"]     for w in WEEKS], mode="lines+markers", line=dict(color="#f59e0b",width=2.5), marker=dict(size=8)))
     fig_line.add_trace(go.Scatter(name="CAPTCHA",          x=wl, y=[w["captcha"] for w in WEEKS], mode="lines+markers", line=dict(color="#8b5cf6",width=2.5), marker=dict(size=8)))
     fig_line.add_trace(go.Scatter(name="Generic Fallback", x=wl, y=[w["generic"] for w in WEEKS], mode="lines+markers", line=dict(color="#6b7280",width=2,dash="dash"), marker=dict(size=8)))
-    fig_line.update_layout(height=280, margin=dict(t=10,b=10,l=0,r=0),
-                           yaxis=dict(title="Error count", gridcolor=grid_color, color=text_secondary),
-                           legend=dict(orientation="h",yanchor="bottom",y=1.02,font=dict(size=11, color=text_primary)),
-                           **{k:v for k,v in plotly_base_layout().items() if k not in ("yaxis",)})
+    fig_line.update_layout(height=280,margin=dict(t=10,b=10,l=0,r=0),paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",yaxis=dict(gridcolor="#f1f5f9",title="Error count"),xaxis=dict(gridcolor="#f1f5f9"),legend=dict(orientation="h",yanchor="bottom",y=1.02,font=dict(size=11)))
     st.plotly_chart(fig_line, use_container_width=True)
 
     st.divider()
@@ -422,19 +167,19 @@ if mode == "Single Period":
     # Error table
     st.markdown(f"**Error Type Detail — {d['label']}**")
     st.markdown(f"""
-<table class="detail-table">
-  <thead><tr>
-    <th>Error Type</th>
-    <th>Count</th>
-    <th>Share</th>
-    <th>Description & Action</th>
+<table style="width:100%;border-collapse:collapse;font-size:13px;">
+  <thead><tr style="background:#f1f5f9;color:#64748b;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">
+    <th style="padding:10px 14px;text-align:left;border-bottom:1px solid #e2e8f0;">Error Type</th>
+    <th style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;">Count</th>
+    <th style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;">Share</th>
+    <th style="padding:10px 14px;text-align:left;border-bottom:1px solid #e2e8f0;">Description & Action</th>
   </tr></thead>
   <tbody>
-    <tr class="row-success"><td style="color:#16a34a;font-weight:600;">🟢 No Errors</td><td style="font-weight:700;">{d['success']}</td><td>{round(d['success']/d['total']*100,1)}%</td><td style="color:{text_secondary};">Article successfully fetched, processed and published. No action required.</td></tr>
-    <tr class="row-error"><td style="color:#dc2626;font-weight:600;">🔴 Bot Protection / Access Blocked</td><td style="font-weight:700;">{d['bot']}</td><td>{bp}%</td><td style="color:{text_secondary};">Website blocked automated access. Analyst must open source manually and write update.</td></tr>
-    <tr class="row-purple"><td style="color:#7c3aed;font-weight:600;">🟣 CAPTCHA / Security Check</td><td style="font-weight:700;">{d['captcha']}</td><td>{cp}%</td><td style="color:{text_secondary};">Page requires a security check. Analyst should review source and write update manually.</td></tr>
-    <tr class="row-warning"><td style="color:#d97706;font-weight:600;">🟡 PDF Timeout</td><td style="font-weight:700;">{d['pdf']}</td><td>{pp}%</td><td style="color:{text_secondary};">PDF took too long to load. Analyst should review document directly and write update manually.</td></tr>
-    <tr class="row-neutral"><td style="color:#475569;font-weight:600;">⚫ Generic Fallback</td><td style="font-weight:700;">{d['generic']}</td><td>{gp}%</td><td style="color:{text_secondary};">Source could not be accessed automatically. Analyst to review source manually.</td></tr>
+    <tr style="background:#f0fdf4;"><td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#16a34a;font-weight:600;">🟢 No Errors</td><td style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:700;">{d['success']}</td><td style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;">{round(d['success']/d['total']*100,1)}%</td><td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#64748b;">Article successfully fetched, processed and published. No action required.</td></tr>
+    <tr style="background:#fef2f2;"><td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#dc2626;font-weight:600;">🔴 Bot Protection / Access Blocked</td><td style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:700;">{d['bot']}</td><td style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;">{bp}%</td><td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#64748b;">Website blocked automated access. Analyst must open source manually and write update.</td></tr>
+    <tr style="background:#faf5ff;"><td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#7c3aed;font-weight:600;">🟣 CAPTCHA / Security Check</td><td style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:700;">{d['captcha']}</td><td style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;">{cp}%</td><td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#64748b;">Page requires a security check. Analyst should review source and write update manually.</td></tr>
+    <tr style="background:#fffbeb;"><td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#d97706;font-weight:600;">🟡 PDF Timeout</td><td style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:700;">{d['pdf']}</td><td style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;">{pp}%</td><td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#64748b;">PDF took too long to load. Analyst should review document directly and write update manually.</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:10px 14px;color:#475569;font-weight:600;">⚫ Generic Fallback</td><td style="padding:10px 14px;text-align:right;font-weight:700;">{d['generic']}</td><td style="padding:10px 14px;text-align:right;">{gp}%</td><td style="padding:10px 14px;color:#64748b;">Source could not be accessed automatically. Analyst to review source manually.</td></tr>
   </tbody>
 </table>""", unsafe_allow_html=True)
 
@@ -469,12 +214,14 @@ else:
 
     st.divider()
 
+    # Side by side headers
     h1, h2 = st.columns(2)
     with h1:
         st.markdown(f'<div class="compare-header">🅐 {a["label"]}</div>', unsafe_allow_html=True)
     with h2:
         st.markdown(f'<div class="compare-header">🅑 {b["label"]}</div>', unsafe_allow_html=True)
 
+    # KPI comparison
     def kpi_card(label, val_a, val_b, unit="", higher_is_better=True, color_a="#6366f1", color_b="#6366f1"):
         diff = round(val_b - val_a, 1)
         if diff > 0:
@@ -501,6 +248,7 @@ else:
 
     st.divider()
 
+    # Side by side bar charts
     ch1, ch2 = st.columns(2)
     for col, d, lbl in [(ch1, a, "A"), (ch2, b, "B")]:
         with col:
@@ -509,13 +257,12 @@ else:
                 y=[d["success"],d["bot"],d["captcha"],d["pdf"],d["generic"]],
                 marker_color=["#10b981","#ef4444","#8b5cf6","#f59e0b","#6b7280"]
             ))
-            fig.update_layout(title=f"Period {lbl} — {d['label']}", title_font_color=text_primary,
-                              height=220, margin=dict(t=30,b=10,l=0,r=0), showlegend=False,
-                              **plotly_base_layout())
+            fig.update_layout(title=f"Period {lbl} — {d['label']}",height=220,margin=dict(t=30,b=10,l=0,r=0),paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",showlegend=False,yaxis=dict(gridcolor="#f1f5f9"))
             st.plotly_chart(fig, use_container_width=True)
 
     st.divider()
 
+    # ── Auto-generated summary ─────────────────────────────────────────────────
     st.markdown("### 📝 Comparison Summary")
 
     def trend(val_a, val_b, higher_is_better=True):
@@ -565,4 +312,3 @@ else:
 </div>"""
 
     st.markdown(summary_html, unsafe_allow_html=True)
-    
