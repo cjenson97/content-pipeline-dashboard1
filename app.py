@@ -10,23 +10,150 @@ st.set_page_config(
     layout="wide"
 )
 
-st.markdown("""
+# ── Dark mode toggle ──────────────────────────────────────────────────────────
+if "dark_mode" not in st.session_state:
+    st.session_state.dark_mode = False
+
+# Small top-right toggle using columns
+_spacer, _toggle_col = st.columns([11, 1])
+with _toggle_col:
+    st.session_state.dark_mode = st.toggle("🌙", value=st.session_state.dark_mode, help="Toggle dark mode")
+
+dm = st.session_state.dark_mode
+
+# ── Theme variables ───────────────────────────────────────────────────────────
+if dm:
+    # Dark palette — muted, easy on the eye
+    BG          = "#0f1117"
+    SURFACE     = "#1a1d27"
+    SURFACE2    = "#21252f"
+    BORDER      = "#2d3142"
+    TEXT_PRI    = "#d4d8e8"
+    TEXT_SEC    = "#7b82a0"
+    TEXT_MUTED  = "#4e5470"
+    PLOT_BG     = "rgba(0,0,0,0)"
+    GRID_COLOR  = "#1e2233"
+    # Muted semantic colours for dark mode
+    GREEN       = "#3dba8c"
+    RED         = "#c95f5f"
+    AMBER       = "#c9913a"
+    PURPLE      = "#7c6fbf"
+    GREY        = "#5a5f72"
+    INDIGO      = "#6b71c4"
+    INFO_BG     = "#131a2e"
+    INFO_BORDER = "#1e3354"
+    ERR_BG      = "#1f1318"
+    ERR_BORDER  = "#3d1f1f"
+    SUC_BG      = "#111f19"
+    SUC_BORDER  = "#1a3328"
+    SUMMARY_BG  = "#131a24"
+    SUMMARY_BOR = "#1e3048"
+    UP_COL      = "#3dba8c"
+    DOWN_COL    = "#c95f5f"
+    SAME_COL    = "#5a5f72"
+    TABLE_HEAD  = "#1a1d27"
+    TABLE_HEAD_TXT = "#7b82a0"
+    TABLE_SUC   = "#111f19"
+    TABLE_ERR   = "#1f1318"
+    TABLE_PUR   = "#18152a"
+    TABLE_AMB   = "#1e1910"
+    TABLE_BASE  = "#161920"
+    COMPARE_HDR = "#1a1d27"
+    COMPARE_TXT = "#d4d8e8"
+else:
+    BG          = "#ffffff"
+    SURFACE     = "#f8fafc"
+    SURFACE2    = "#f1f5f9"
+    BORDER      = "#e2e8f0"
+    TEXT_PRI    = "#0f172a"
+    TEXT_SEC    = "#64748b"
+    TEXT_MUTED  = "#94a3b8"
+    PLOT_BG     = "rgba(0,0,0,0)"
+    GRID_COLOR  = "#f1f5f9"
+    GREEN       = "#10b981"
+    RED         = "#ef4444"
+    AMBER       = "#f59e0b"
+    PURPLE      = "#8b5cf6"
+    GREY        = "#6b7280"
+    INDIGO      = "#6366f1"
+    INFO_BG     = "#f0f9ff"
+    INFO_BORDER = "#bae6fd"
+    ERR_BG      = "#fef2f2"
+    ERR_BORDER  = "#fecaca"
+    SUC_BG      = "#f0fdf4"
+    SUC_BORDER  = "#bbf7d0"
+    SUMMARY_BG  = "#f0f9ff"
+    SUMMARY_BOR = "#bae6fd"
+    UP_COL      = "#10b981"
+    DOWN_COL    = "#ef4444"
+    SAME_COL    = "#64748b"
+    TABLE_HEAD  = "#f1f5f9"
+    TABLE_HEAD_TXT = "#64748b"
+    TABLE_SUC   = "#f0fdf4"
+    TABLE_ERR   = "#fef2f2"
+    TABLE_PUR   = "#faf5ff"
+    TABLE_AMB   = "#fffbeb"
+    TABLE_BASE  = "#f8fafc"
+    COMPARE_HDR = "#1e293b"
+    COMPARE_TXT = "#ffffff"
+
+# ── Inject CSS ────────────────────────────────────────────────────────────────
+st.markdown(f"""
 <style>
-    .metric-card {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
+    /* ── App background ── */
+    .stApp, .stApp > div, section[data-testid="stMain"] > div, div[data-testid="stAppViewContainer"] {{
+        background-color: {BG} !important;
+        color: {TEXT_PRI} !important;
+    }}
+    /* ── Sidebar / tool strip ── */
+    section[data-testid="stSidebar"] {{
+        background-color: {SURFACE} !important;
+    }}
+    /* ── General text ── */
+    .stMarkdown, .stMarkdown p, .stMarkdown li, label, .stRadio label,
+    div[data-testid="stMarkdownContainer"] p {{
+        color: {TEXT_PRI} !important;
+    }}
+    /* ── Dividers ── */
+    hr {{ border-color: {BORDER} !important; }}
+    /* ── Select / radio ── */
+    div[data-baseweb="select"] > div {{
+        background-color: {SURFACE} !important;
+        border-color: {BORDER} !important;
+        color: {TEXT_PRI} !important;
+    }}
+    div[data-baseweb="select"] span {{ color: {TEXT_PRI} !important; }}
+    div[data-baseweb="menu"] {{ background-color: {SURFACE} !important; }}
+    div[data-baseweb="menu"] li {{ color: {TEXT_PRI} !important; background-color: {SURFACE} !important; }}
+    div[data-baseweb="menu"] li:hover {{ background-color: {SURFACE2} !important; }}
+    div[data-baseweb="radio"] label {{ color: {TEXT_PRI} !important; }}
+    /* ── Info / error / success boxes ── */
+    div[data-testid="stAlert"] {{
+        background-color: {SURFACE} !important;
+        border-color: {BORDER} !important;
+        color: {TEXT_PRI} !important;
+    }}
+    /* ── Metric cards (custom HTML) — colours handled inline ── */
+    .metric-card {{
+        background: {SURFACE};
+        border: 1px solid {BORDER};
         border-radius: 12px;
         padding: 16px;
         text-align: center;
-    }
-    .metric-label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .08em; }
-    .metric-value { font-size: 2rem; font-weight: 900; margin: 4px 0; }
-    .metric-sub   { font-size: 11px; color: #94a3b8; }
-    .compare-header { background:#1e293b; color:#fff; padding:8px 14px; border-radius:8px; font-size:12px; font-weight:700; text-align:center; margin-bottom:10px; }
-    .summary-box { background:#f0f9ff; border:1px solid #bae6fd; border-radius:12px; padding:16px 20px; font-size:13px; line-height:1.8; }
-    .up   { color:#10b981; font-weight:700; }
-    .down { color:#ef4444; font-weight:700; }
-    .same { color:#64748b; font-weight:700; }
+    }}
+    .metric-label  {{ font-size: 10px; font-weight: 700; color: {TEXT_SEC}; text-transform: uppercase; letter-spacing: .08em; }}
+    .metric-value  {{ font-size: 2rem; font-weight: 900; margin: 4px 0; }}
+    .metric-sub    {{ font-size: 11px; color: {TEXT_MUTED}; }}
+    .compare-header{{ background:{COMPARE_HDR}; color:{COMPARE_TXT}; padding:8px 14px; border-radius:8px; font-size:12px; font-weight:700; text-align:center; margin-bottom:10px; }}
+    .summary-box   {{ background:{SUMMARY_BG}; border:1px solid {SUMMARY_BOR}; border-radius:12px; padding:16px 20px; font-size:13px; line-height:1.8; color:{TEXT_PRI}; }}
+    .up   {{ color:{UP_COL};   font-weight:700; }}
+    .down {{ color:{DOWN_COL}; font-weight:700; }}
+    .same {{ color:{SAME_COL}; font-weight:700; }}
+    /* ── Table ── */
+    table {{ color: {TEXT_PRI} !important; }}
+    td, th {{ color: {TEXT_PRI} !important; }}
+    /* ── Toggle ── */
+    div[data-testid="stToggle"] label {{ color: {TEXT_SEC} !important; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -80,6 +207,29 @@ def captcha_pct(d):  return round(d["captcha"] / d["failed"] * 100, 1) if d["fai
 def pdf_pct(d):      return round(d["pdf"]     / d["failed"] * 100, 1) if d["failed"] > 0 else 0
 def generic_pct(d):  return round(d["generic"] / d["failed"] * 100, 1) if d["failed"] > 0 else 0
 
+# ── Plotly theme helper ───────────────────────────────────────────────────────
+def base_layout(height=250, title=None):
+    layout = dict(
+        height=height,
+        margin=dict(t=30 if title else 10, b=10, l=0, r=0),
+        paper_bgcolor=PLOT_BG,
+        plot_bgcolor=PLOT_BG,
+        showlegend=False,
+        yaxis=dict(gridcolor=GRID_COLOR, color=TEXT_SEC, zerolinecolor=BORDER),
+        xaxis=dict(gridcolor=GRID_COLOR, color=TEXT_SEC),
+        font=dict(color=TEXT_SEC),
+    )
+    if title:
+        layout["title"] = dict(text=title, font=dict(color=TEXT_PRI, size=13))
+    return layout
+
+# Chart colours — muted in dark mode
+C_SUCCESS = GREEN
+C_BOT     = RED
+C_CAPTCHA = PURPLE
+C_PDF     = AMBER
+C_GENERIC = GREY
+
 # ── Header ────────────────────────────────────────────────────────────────────
 st.markdown("## 📊 Content Pipeline · Executive Dashboard")
 st.markdown(f"*Generated {date.today().strftime('%d %B %Y')} · Live data refreshes every 60 seconds*")
@@ -114,17 +264,17 @@ if mode == "Single Period":
     vol_sub   = "articles this week" if d["key"] != "all" else "articles all time"
 
     with c1:
-        st.markdown(f'<div class="metric-card" style="border-left:4px solid #6366f1;"><div class="metric-label">{vol_label}</div><div class="metric-value" style="color:#6366f1;">{d["total"]}</div><div class="metric-sub">{vol_sub}</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-card" style="border-left:4px solid {INDIGO};"><div class="metric-label">{vol_label}</div><div class="metric-value" style="color:{INDIGO};">{d["total"]}</div><div class="metric-sub">{vol_sub}</div></div>', unsafe_allow_html=True)
     with c2:
-        st.markdown(f'<div class="metric-card" style="border-left:4px solid #10b981;"><div class="metric-label">Success Rate</div><div class="metric-value" style="color:#10b981;">{sr}%</div><div class="metric-sub">{d["success"]} of {d["total"]} articles</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-card" style="border-left:4px solid {GREEN};"><div class="metric-label">Success Rate</div><div class="metric-value" style="color:{GREEN};">{sr}%</div><div class="metric-sub">{d["success"]} of {d["total"]} articles</div></div>', unsafe_allow_html=True)
     with c3:
-        st.markdown(f'<div class="metric-card" style="border-left:4px solid #f59e0b;"><div class="metric-label">Avg Gen Time</div><div class="metric-value" style="color:#f59e0b;">{avg_gen_time}s</div><div class="metric-sub">per article (live)</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-card" style="border-left:4px solid {AMBER};"><div class="metric-label">Avg Gen Time</div><div class="metric-value" style="color:{AMBER};">{avg_gen_time}s</div><div class="metric-sub">per article (live)</div></div>', unsafe_allow_html=True)
     with c4:
-        tc = "#94a3b8" if today_total == 0 else "#f59e0b"
+        tc = TEXT_MUTED if today_total == 0 else AMBER
         ts = "no articles yet today" if today_total == 0 else f"{today_success} success · {today_failed} failed"
-        st.markdown(f'<div class="metric-card" style="border-left:4px solid #f59e0b;"><div class="metric-label">Today\'s Output</div><div class="metric-value" style="color:{tc};">{today_total}</div><div class="metric-sub">{ts}</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-card" style="border-left:4px solid {AMBER};"><div class="metric-label">Today\'s Output</div><div class="metric-value" style="color:{tc};">{today_total}</div><div class="metric-sub">{ts}</div></div>', unsafe_allow_html=True)
     with c5:
-        st.markdown(f'<div class="metric-card" style="border-left:4px solid #ef4444;"><div class="metric-label">Error Rate</div><div class="metric-value" style="color:#ef4444;">{er}%</div><div class="metric-sub">{d["failed"]} of {d["total"]} failed</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-card" style="border-left:4px solid {RED};"><div class="metric-label">Error Rate</div><div class="metric-value" style="color:{RED};">{er}%</div><div class="metric-sub">{d["failed"]} of {d["total"]} failed</div></div>', unsafe_allow_html=True)
 
     st.divider()
 
@@ -135,18 +285,25 @@ if mode == "Single Period":
         bar = go.Figure(go.Bar(
             x=["No Errors","Bot Protection","CAPTCHA","PDF Timeout","Generic"],
             y=[d["success"],d["bot"],d["captcha"],d["pdf"],d["generic"]],
-            marker_color=["#10b981","#ef4444","#8b5cf6","#f59e0b","#6b7280"]
+            marker_color=[C_SUCCESS, C_BOT, C_CAPTCHA, C_PDF, C_GENERIC]
         ))
-        bar.update_layout(margin=dict(t=10,b=10,l=0,r=0),height=250,paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",showlegend=False,yaxis=dict(gridcolor="#f1f5f9"))
+        bar.update_layout(**base_layout(250))
         st.plotly_chart(bar, use_container_width=True)
+
     with col_donut:
         st.markdown("**Distribution**")
         donut = go.Figure(go.Pie(
             labels=["No Errors","Bot Protection","PDF Timeout","CAPTCHA","Generic"],
             values=[d["success"],d["bot"],d["pdf"],d["captcha"],d["generic"]],
-            hole=0.6, marker_colors=["#10b981","#ef4444","#f59e0b","#8b5cf6","#6b7280"]
+            hole=0.6,
+            marker_colors=[C_SUCCESS, C_BOT, C_PDF, C_CAPTCHA, C_GENERIC]
         ))
-        donut.update_layout(margin=dict(t=10,b=10,l=0,r=0),height=250,paper_bgcolor="rgba(0,0,0,0)",legend=dict(font=dict(size=10)))
+        donut.update_layout(
+            margin=dict(t=10,b=10,l=0,r=0), height=250,
+            paper_bgcolor=PLOT_BG,
+            legend=dict(font=dict(size=10, color=TEXT_SEC)),
+            font=dict(color=TEXT_SEC),
+        )
         st.plotly_chart(donut, use_container_width=True)
 
     st.divider()
@@ -155,11 +312,18 @@ if mode == "Single Period":
     st.markdown("**Error Trends — Weekly Since Monitoring Start (18 Feb 2026)**")
     wl = [w["label"].split("—")[0].strip() for w in WEEKS]
     fig_line = go.Figure()
-    fig_line.add_trace(go.Scatter(name="Bot Protection",   x=wl, y=[w["bot"]     for w in WEEKS], mode="lines+markers", line=dict(color="#ef4444",width=2.5), marker=dict(size=8)))
-    fig_line.add_trace(go.Scatter(name="PDF Timeout",      x=wl, y=[w["pdf"]     for w in WEEKS], mode="lines+markers", line=dict(color="#f59e0b",width=2.5), marker=dict(size=8)))
-    fig_line.add_trace(go.Scatter(name="CAPTCHA",          x=wl, y=[w["captcha"] for w in WEEKS], mode="lines+markers", line=dict(color="#8b5cf6",width=2.5), marker=dict(size=8)))
-    fig_line.add_trace(go.Scatter(name="Generic Fallback", x=wl, y=[w["generic"] for w in WEEKS], mode="lines+markers", line=dict(color="#6b7280",width=2,dash="dash"), marker=dict(size=8)))
-    fig_line.update_layout(height=280,margin=dict(t=10,b=10,l=0,r=0),paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",yaxis=dict(gridcolor="#f1f5f9",title="Error count"),xaxis=dict(gridcolor="#f1f5f9"),legend=dict(orientation="h",yanchor="bottom",y=1.02,font=dict(size=11)))
+    fig_line.add_trace(go.Scatter(name="Bot Protection",   x=wl, y=[w["bot"]     for w in WEEKS], mode="lines+markers", line=dict(color=C_BOT,     width=2.5), marker=dict(size=8)))
+    fig_line.add_trace(go.Scatter(name="PDF Timeout",      x=wl, y=[w["pdf"]     for w in WEEKS], mode="lines+markers", line=dict(color=C_PDF,     width=2.5), marker=dict(size=8)))
+    fig_line.add_trace(go.Scatter(name="CAPTCHA",          x=wl, y=[w["captcha"] for w in WEEKS], mode="lines+markers", line=dict(color=C_CAPTCHA, width=2.5), marker=dict(size=8)))
+    fig_line.add_trace(go.Scatter(name="Generic Fallback", x=wl, y=[w["generic"] for w in WEEKS], mode="lines+markers", line=dict(color=C_GENERIC, width=2, dash="dash"), marker=dict(size=8)))
+    fig_line.update_layout(
+        height=280, margin=dict(t=10,b=10,l=0,r=0),
+        paper_bgcolor=PLOT_BG, plot_bgcolor=PLOT_BG,
+        yaxis=dict(gridcolor=GRID_COLOR, title="Error count", color=TEXT_SEC, zerolinecolor=BORDER),
+        xaxis=dict(gridcolor=GRID_COLOR, color=TEXT_SEC),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, font=dict(size=11, color=TEXT_SEC)),
+        font=dict(color=TEXT_SEC),
+    )
     st.plotly_chart(fig_line, use_container_width=True)
 
     st.divider()
@@ -168,18 +332,18 @@ if mode == "Single Period":
     st.markdown(f"**Error Type Detail — {d['label']}**")
     st.markdown(f"""
 <table style="width:100%;border-collapse:collapse;font-size:13px;">
-  <thead><tr style="background:#f1f5f9;color:#64748b;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">
-    <th style="padding:10px 14px;text-align:left;border-bottom:1px solid #e2e8f0;">Error Type</th>
-    <th style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;">Count</th>
-    <th style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;">Share</th>
-    <th style="padding:10px 14px;text-align:left;border-bottom:1px solid #e2e8f0;">Description & Action</th>
+  <thead><tr style="background:{TABLE_HEAD};color:{TABLE_HEAD_TXT};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">
+    <th style="padding:10px 14px;text-align:left;border-bottom:1px solid {BORDER};">Error Type</th>
+    <th style="padding:10px 14px;text-align:right;border-bottom:1px solid {BORDER};">Count</th>
+    <th style="padding:10px 14px;text-align:right;border-bottom:1px solid {BORDER};">Share</th>
+    <th style="padding:10px 14px;text-align:left;border-bottom:1px solid {BORDER};">Description & Action</th>
   </tr></thead>
   <tbody>
-    <tr style="background:#f0fdf4;"><td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#16a34a;font-weight:600;">🟢 No Errors</td><td style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:700;">{d['success']}</td><td style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;">{round(d['success']/d['total']*100,1)}%</td><td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#64748b;">Article successfully fetched, processed and published. No action required.</td></tr>
-    <tr style="background:#fef2f2;"><td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#dc2626;font-weight:600;">🔴 Bot Protection / Access Blocked</td><td style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:700;">{d['bot']}</td><td style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;">{bp}%</td><td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#64748b;">Website blocked automated access. Analyst must open source manually and write update.</td></tr>
-    <tr style="background:#faf5ff;"><td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#7c3aed;font-weight:600;">🟣 CAPTCHA / Security Check</td><td style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:700;">{d['captcha']}</td><td style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;">{cp}%</td><td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#64748b;">Page requires a security check. Analyst should review source and write update manually.</td></tr>
-    <tr style="background:#fffbeb;"><td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#d97706;font-weight:600;">🟡 PDF Timeout</td><td style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:700;">{d['pdf']}</td><td style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;">{pp}%</td><td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#64748b;">PDF took too long to load. Analyst should review document directly and write update manually.</td></tr>
-    <tr style="background:#f8fafc;"><td style="padding:10px 14px;color:#475569;font-weight:600;">⚫ Generic Fallback</td><td style="padding:10px 14px;text-align:right;font-weight:700;">{d['generic']}</td><td style="padding:10px 14px;text-align:right;">{gp}%</td><td style="padding:10px 14px;color:#64748b;">Source could not be accessed automatically. Analyst to review source manually.</td></tr>
+    <tr style="background:{TABLE_SUC};"><td style="padding:10px 14px;border-bottom:1px solid {BORDER};color:{GREEN};font-weight:600;">🟢 No Errors</td><td style="padding:10px 14px;text-align:right;border-bottom:1px solid {BORDER};font-weight:700;color:{TEXT_PRI};">{d['success']}</td><td style="padding:10px 14px;text-align:right;border-bottom:1px solid {BORDER};color:{TEXT_SEC};">{round(d['success']/d['total']*100,1)}%</td><td style="padding:10px 14px;border-bottom:1px solid {BORDER};color:{TEXT_SEC};">Article successfully fetched, processed and published. No action required.</td></tr>
+    <tr style="background:{TABLE_ERR};"><td style="padding:10px 14px;border-bottom:1px solid {BORDER};color:{RED};font-weight:600;">🔴 Bot Protection / Access Blocked</td><td style="padding:10px 14px;text-align:right;border-bottom:1px solid {BORDER};font-weight:700;color:{TEXT_PRI};">{d['bot']}</td><td style="padding:10px 14px;text-align:right;border-bottom:1px solid {BORDER};color:{TEXT_SEC};">{bp}%</td><td style="padding:10px 14px;border-bottom:1px solid {BORDER};color:{TEXT_SEC};">Website blocked automated access. Analyst must open source manually and write update.</td></tr>
+    <tr style="background:{TABLE_PUR};"><td style="padding:10px 14px;border-bottom:1px solid {BORDER};color:{PURPLE};font-weight:600;">🟣 CAPTCHA / Security Check</td><td style="padding:10px 14px;text-align:right;border-bottom:1px solid {BORDER};font-weight:700;color:{TEXT_PRI};">{d['captcha']}</td><td style="padding:10px 14px;text-align:right;border-bottom:1px solid {BORDER};color:{TEXT_SEC};">{cp}%</td><td style="padding:10px 14px;border-bottom:1px solid {BORDER};color:{TEXT_SEC};">Page requires a security check. Analyst should review source and write update manually.</td></tr>
+    <tr style="background:{TABLE_AMB};"><td style="padding:10px 14px;border-bottom:1px solid {BORDER};color:{AMBER};font-weight:600;">🟡 PDF Timeout</td><td style="padding:10px 14px;text-align:right;border-bottom:1px solid {BORDER};font-weight:700;color:{TEXT_PRI};">{d['pdf']}</td><td style="padding:10px 14px;text-align:right;border-bottom:1px solid {BORDER};color:{TEXT_SEC};">{pp}%</td><td style="padding:10px 14px;border-bottom:1px solid {BORDER};color:{TEXT_SEC};">PDF took too long to load. Analyst should review document directly and write update manually.</td></tr>
+    <tr style="background:{TABLE_BASE};"><td style="padding:10px 14px;color:{TEXT_SEC};font-weight:600;">⚫ Generic Fallback</td><td style="padding:10px 14px;text-align:right;font-weight:700;color:{TEXT_PRI};">{d['generic']}</td><td style="padding:10px 14px;text-align:right;color:{TEXT_SEC};">{gp}%</td><td style="padding:10px 14px;color:{TEXT_SEC};">Source could not be accessed automatically. Analyst to review source manually.</td></tr>
   </tbody>
 </table>""", unsafe_allow_html=True)
 
@@ -222,29 +386,31 @@ else:
         st.markdown(f'<div class="compare-header">🅑 {b["label"]}</div>', unsafe_allow_html=True)
 
     # KPI comparison
-    def kpi_card(label, val_a, val_b, unit="", higher_is_better=True, color_a="#6366f1", color_b="#6366f1"):
+    def kpi_card(label, val_a, val_b, unit="", higher_is_better=True, color_a=None, color_b=None):
+        color_a = color_a or INDIGO
+        color_b = color_b or INDIGO
         diff = round(val_b - val_a, 1)
         if diff > 0:
             arrow = "▲" if higher_is_better else "▼"
-            diff_color = "#10b981" if higher_is_better else "#ef4444"
+            diff_color = UP_COL if higher_is_better else DOWN_COL
         elif diff < 0:
             arrow = "▼" if higher_is_better else "▲"
-            diff_color = "#ef4444" if higher_is_better else "#10b981"
+            diff_color = DOWN_COL if higher_is_better else UP_COL
         else:
-            arrow, diff_color = "→", "#94a3b8"
+            arrow, diff_color = "→", SAME_COL
         c1, c2 = st.columns(2)
         with c1:
             st.markdown(f'<div class="metric-card" style="border-left:4px solid {color_a};"><div class="metric-label">{label}</div><div class="metric-value" style="color:{color_a};">{val_a}{unit}</div></div>', unsafe_allow_html=True)
         with c2:
             st.markdown(f'<div class="metric-card" style="border-left:4px solid {color_b};"><div class="metric-value" style="color:{color_b};">{val_b}{unit}</div><div class="metric-sub" style="color:{diff_color};font-weight:700;">{arrow} {abs(diff)}{unit} vs Period A</div></div>', unsafe_allow_html=True)
 
-    kpi_card("Total Articles",  a["total"],   b["total"],   higher_is_better=True,  color_a="#6366f1", color_b="#6366f1")
-    kpi_card("Success Rate",    sr_a,         sr_b,         unit="%", higher_is_better=True,  color_a="#10b981", color_b="#10b981")
-    kpi_card("Error Rate",      er_a,         er_b,         unit="%", higher_is_better=False, color_a="#ef4444", color_b="#ef4444")
-    kpi_card("Failed Articles", a["failed"],  b["failed"],  higher_is_better=False, color_a="#ef4444", color_b="#ef4444")
-    kpi_card("Bot Errors",      a["bot"],     b["bot"],     higher_is_better=False, color_a="#ef4444", color_b="#ef4444")
-    kpi_card("PDF Timeouts",    a["pdf"],     b["pdf"],     higher_is_better=False, color_a="#f59e0b", color_b="#f59e0b")
-    kpi_card("CAPTCHA Errors",  a["captcha"], b["captcha"], higher_is_better=False, color_a="#8b5cf6", color_b="#8b5cf6")
+    kpi_card("Total Articles",  a["total"],   b["total"],   higher_is_better=True,  color_a=INDIGO, color_b=INDIGO)
+    kpi_card("Success Rate",    sr_a,         sr_b,         unit="%", higher_is_better=True,  color_a=GREEN,  color_b=GREEN)
+    kpi_card("Error Rate",      er_a,         er_b,         unit="%", higher_is_better=False, color_a=RED,    color_b=RED)
+    kpi_card("Failed Articles", a["failed"],  b["failed"],  higher_is_better=False, color_a=RED,    color_b=RED)
+    kpi_card("Bot Errors",      a["bot"],     b["bot"],     higher_is_better=False, color_a=RED,    color_b=RED)
+    kpi_card("PDF Timeouts",    a["pdf"],     b["pdf"],     higher_is_better=False, color_a=AMBER,  color_b=AMBER)
+    kpi_card("CAPTCHA Errors",  a["captcha"], b["captcha"], higher_is_better=False, color_a=PURPLE, color_b=PURPLE)
 
     st.divider()
 
@@ -255,9 +421,9 @@ else:
             fig = go.Figure(go.Bar(
                 x=["No Errors","Bot","CAPTCHA","PDF","Generic"],
                 y=[d["success"],d["bot"],d["captcha"],d["pdf"],d["generic"]],
-                marker_color=["#10b981","#ef4444","#8b5cf6","#f59e0b","#6b7280"]
+                marker_color=[C_SUCCESS, C_BOT, C_CAPTCHA, C_PDF, C_GENERIC]
             ))
-            fig.update_layout(title=f"Period {lbl} — {d['label']}",height=220,margin=dict(t=30,b=10,l=0,r=0),paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",showlegend=False,yaxis=dict(gridcolor="#f1f5f9"))
+            fig.update_layout(**base_layout(220, title=f"Period {lbl} — {d['label']}"))
             st.plotly_chart(fig, use_container_width=True)
 
     st.divider()
