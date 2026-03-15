@@ -202,19 +202,50 @@ st.divider()
 # ── Error Type Detail Table ───────────────────────────────────────────────────
 st.markdown(f"**Error Type Detail — {d['label']}**")
 
-table_data = {
-    "Error Type":        ["✅ No Errors", "🔴 Bot Protection / Access Blocked", "🟣 CAPTCHA / Security Check", "🟡 PDF Timeout", "⚫ Generic Fallback"],
-    "Count":             [d["success"], d["bot"], d["captcha"], d["pdf"], d["generic"]],
-    "Share":             [f"{round(d['success']/d['total']*100,1)}%", f"{bot_pct}%", f"{captcha_pct}%", f"{pdf_pct}%", f"{generic_pct}%"],
-    "Description":       [
-        "Article successfully fetched, processed and published.",
-        "Website blocked automated access. Open source and create update manually.",
-        "Page requires a security check. Review source and write update manually.",
-        "PDF took too long to load. Review document and write update manually.",
-        "Could not access source automatically. Review source manually."
-    ]
-}
-st.dataframe(table_data, use_container_width=True, hide_index=True)
+st.markdown(f"""
+<table style="width:100%;border-collapse:collapse;font-size:13px;">
+  <thead>
+    <tr style="background:#f1f5f9;color:#64748b;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">
+      <th style="padding:10px 14px;text-align:left;border-bottom:1px solid #e2e8f0;">Error Type</th>
+      <th style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;">Count</th>
+      <th style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;">Share</th>
+      <th style="padding:10px 14px;text-align:left;border-bottom:1px solid #e2e8f0;">Description & Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background:#f0fdf4;">
+      <td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#16a34a;font-weight:600;">🟢 No Errors</td>
+      <td style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:700;">{d['success']}</td>
+      <td style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;">{round(d['success']/d['total']*100,1)}%</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#64748b;">Article successfully fetched, processed and published. No action required.</td>
+    </tr>
+    <tr style="background:#fef2f2;">
+      <td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#dc2626;font-weight:600;">🔴 Bot Protection / Access Blocked</td>
+      <td style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:700;">{d['bot']}</td>
+      <td style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;">{bot_pct}%</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#64748b;">Website blocked automated access. Analyst must open source manually and write update.</td>
+    </tr>
+    <tr style="background:#faf5ff;">
+      <td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#7c3aed;font-weight:600;">🟣 CAPTCHA / Security Check</td>
+      <td style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:700;">{d['captcha']}</td>
+      <td style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;">{captcha_pct}%</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#64748b;">Page requires a security check. Analyst should review source and write update manually.</td>
+    </tr>
+    <tr style="background:#fffbeb;">
+      <td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#d97706;font-weight:600;">🟡 PDF Timeout</td>
+      <td style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:700;">{d['pdf']}</td>
+      <td style="padding:10px 14px;text-align:right;border-bottom:1px solid #e2e8f0;">{pdf_pct}%</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;color:#64748b;">PDF took too long to load. Analyst should review document directly and write update manually.</td>
+    </tr>
+    <tr style="background:#f8fafc;">
+      <td style="padding:10px 14px;color:#475569;font-weight:600;">⚫ Generic Fallback</td>
+      <td style="padding:10px 14px;text-align:right;font-weight:700;">{d['generic']}</td>
+      <td style="padding:10px 14px;text-align:right;">{generic_pct}%</td>
+      <td style="padding:10px 14px;color:#64748b;">Source could not be accessed automatically. Analyst to review source manually.</td>
+    </tr>
+  </tbody>
+</table>
+""", unsafe_allow_html=True)
 
 st.divider()
 
