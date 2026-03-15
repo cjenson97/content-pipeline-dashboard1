@@ -251,9 +251,32 @@ st.divider()
 
 # ── Footer info cards ─────────────────────────────────────────────────────────
 f1, f2, f3 = st.columns(3)
+
+# All figures pulled from the selected period (d) and live API stats
+week_total   = d["total"]
+week_failed  = d["failed"]
+bot_count    = d["bot"]
+total_count  = d["total"]
+total_failed = d["failed"]
+total_errors_excl_bot = d["captcha"] + d["pdf"] + d["generic"]
+
+processing_mins = round(avg_gen_time * week_total / 60)
+bot_pct_of_failures = round(bot_count / total_failed * 100, 1) if total_failed > 0 else 0
+current_error_rate  = round(total_failed / total_count * 100, 1) if total_count > 0 else 0
+error_rate_without_bot = round(total_errors_excl_bot / total_count * 100, 1) if total_count > 0 else 0
+manual_interventions = round(week_failed * 1.2)
+
 with f1:
-    st.info(f"⚡ **Pipeline Speed**\n\nAverage **{avg_gen_time} seconds** per article. At {WEEKS[3]['total']} articles/week that's ~**{round(avg_gen_time * WEEKS[3]['total'] / 60)} minutes** of processing time.")
+    st.info(f"""⚡ **Pipeline Speed**
+
+Average **{avg_gen_time} seconds** per article. At {week_total} articles/week that's ~**{processing_mins} minutes** of processing time.""")
+
 with f2:
-    st.error(f"🚨 **Top Error Driver**\n\nBot Protection accounts for **{round(ALL_TIME['bot']/ALL_TIME['failed']*100,1)}%** of all failures. Fixing this would reduce error rate from {round(ALL_TIME['failed']/ALL_TIME['total']*100,1)}% to ~**{round(ALL_TIME['generic']+ALL_TIME['captcha']+ALL_TIME['pdf'])/ALL_TIME['total']*100:.1f}%**.")
+    st.error(f"""🚨 **Top Error Driver**
+
+Bot Protection accounts for **{bot_pct_of_failures}%** of all failures. Fixing this would reduce error rate from {current_error_rate}% to ~**{error_rate_without_bot}%**.""")
+
 with f3:
-    st.success(f"📈 **Weekly Throughput**\n\n**{WEEKS[3]['total']} articles** this week. ~**{round(WEEKS[3]['failed']*1.2)} articles** require manual analyst intervention at current error rates.")
+    st.success(f"""📈 **Weekly Throughput**
+
+**{week_total} articles** this week. ~**{manual_interventions} articles** require manual analyst intervention at current error rates.""")
