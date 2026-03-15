@@ -10,64 +10,9 @@ st.set_page_config(
     layout="wide"
 )
 
-# ── Dynamic Theme CSS ─────────────────────────────────────────────────────────
-if theme == "dark":
-    bg = "#0f172a"
-    card_bg = "#1e293b"
-    border = "#334155"
-    text = "#e2e8f0"
-    subtext = "#94a3b8"
-else:
-    bg = "#ffffff"
-    card_bg = "#f8fafc"
-    border = "#e2e8f0"
-    text = "#0f172a"
-    subtext = "#64748b"
-
-st.markdown(f"""
+st.markdown("""
 <style>
-
-.stApp {{
-    background-color: {bg};
-    color: {text};
-}}
-
-.metric-card {{
-    background: {card_bg};
-    border: 1px solid {border};
-    border-radius: 12px;
-    padding: 16px;
-    text-align: center;
-}}
-
-.metric-label {{
-    font-size: 10px;
-    font-weight: 700;
-    color: {subtext};
-    text-transform: uppercase;
-    letter-spacing: .08em;
-}}
-
-.metric-value {{
-    font-size: 2rem;
-    font-weight: 900;
-    margin: 4px 0;
-}}
-
-.metric-sub {{
-    font-size: 11px;
-    color: {subtext};
-}}
-
-.summary-box {{
-    background:{card_bg};
-    border:1px solid {border};
-    border-radius:12px;
-    padding:16px 20px;
-    font-size:13px;
-    line-height:1.8;
-}}
-
+...
 </style>
 """, unsafe_allow_html=True)
 # ── Theme Toggle ──────────────────────────────────────────────────────────────
