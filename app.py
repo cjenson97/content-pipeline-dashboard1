@@ -5,73 +5,30 @@ from datetime import date
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Horizon Scanning Content Pipeline - Dashboard",
+    page_title="Content Pipeline · Exec Dashboard",
     page_icon="📊",
     layout="wide"
 )
 
 st.markdown("""
-if dark_mode:
-    # DARK MODE
-    st.markdown("""
-    <style>
-        .stApp { background-color: #0f172a; color: #e2e8f0; }
-
-        .metric-card {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 12px;
-            padding: 16px;
-            text-align: center;
-        }
-
-        .metric-label { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .08em; }
-        .metric-value { font-size: 2rem; font-weight: 900; margin: 4px 0; }
-        .metric-sub   { font-size: 11px; color: #94a3b8; }
-
-        .compare-header { background:#020617; color:#f8fafc; padding:8px 14px; border-radius:8px; font-size:12px; font-weight:700; text-align:center; margin-bottom:10px; }
-
-        .summary-box {
-            background:#020617;
-            border:1px solid #334155;
-            border-radius:12px;
-            padding:16px 20px;
-            font-size:13px;
-            line-height:1.8;
-        }
-
-        .up   { color:#22c55e; font-weight:700; }
-        .down { color:#ef4444; font-weight:700; }
-        .same { color:#94a3b8; font-weight:700; }
-
-    </style>
-    """, unsafe_allow_html=True)
-
-else:
-    # LIGHT MODE (your existing styles)
-    st.markdown("""
-    <style>
-        .metric-card {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 16px;
-            text-align: center;
-        }
-
-        .metric-label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .08em; }
-        .metric-value { font-size: 2rem; font-weight: 900; margin: 4px 0; }
-        .metric-sub   { font-size: 11px; color: #94a3b8; }
-
-        .compare-header { background:#1e293b; color:#fff; padding:8px 14px; border-radius:8px; font-size:12px; font-weight:700; text-align:center; margin-bottom:10px; }
-
-        .summary-box { background:#f0f9ff; border:1px solid #bae6fd; border-radius:12px; padding:16px 20px; font-size:13px; line-height:1.8; }
-
-        .up   { color:#10b981; font-weight:700; }
-        .down { color:#ef4444; font-weight:700; }
-        .same { color:#64748b; font-weight:700; }
-    </style>
-    """, unsafe_allow_html=True)
+<style>
+    .metric-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px;
+        text-align: center;
+    }
+    .metric-label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .08em; }
+    .metric-value { font-size: 2rem; font-weight: 900; margin: 4px 0; }
+    .metric-sub   { font-size: 11px; color: #94a3b8; }
+    .compare-header { background:#1e293b; color:#fff; padding:8px 14px; border-radius:8px; font-size:12px; font-weight:700; text-align:center; margin-bottom:10px; }
+    .summary-box { background:#f0f9ff; border:1px solid #bae6fd; border-radius:12px; padding:16px 20px; font-size:13px; line-height:1.8; }
+    .up   { color:#10b981; font-weight:700; }
+    .down { color:#ef4444; font-weight:700; }
+    .same { color:#64748b; font-weight:700; }
+</style>
+""", unsafe_allow_html=True)
 
 # ── Fetch live API ────────────────────────────────────────────────────────────
 API_URL = "http://18.170.93.124:5000/api/stats"
@@ -85,8 +42,6 @@ def fetch_stats():
         return None
 
 stats = fetch_stats()
-# ── Dark mode toggle ─────────────────────────────────────────
-dark_mode = st.toggle("🌙 Dark Mode")
 
 # ── Data ──────────────────────────────────────────────────────────────────────
 WEEKS = [
