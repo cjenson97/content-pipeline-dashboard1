@@ -9,7 +9,8 @@ st.set_page_config(
     page_icon="📊",
     layout="wide"
 )
-
+# ── Dark mode toggle ─────────────────────────────────────────
+dark_mode = st.toggle("🌙 Dark Mode")
 st.markdown("""
 <style>
     .metric-card {
@@ -29,8 +30,6 @@ st.markdown("""
     .same { color:#64748b; font-weight:700; }
 </style>
 """, unsafe_allow_html=True)
-# ── Dark mode toggle ─────────────────────────────────────────
-dark_mode = st.toggle("🌙 Dark Mode")
 
 # ── Fetch live API ────────────────────────────────────────────────────────────
 API_URL = "http://18.170.93.124:5000/api/stats"
