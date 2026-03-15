@@ -42,6 +42,8 @@ def fetch_stats():
         return None
 
 stats = fetch_stats()
+# ── Dark mode toggle ─────────────────────────────────────────
+dark_mode = st.toggle("🌙 Dark Mode")
 
 # ── Data ──────────────────────────────────────────────────────────────────────
 WEEKS = [
