@@ -29,6 +29,16 @@ st.markdown("""
     .same { color:#64748b; font-weight:700; }
 </style>
 """, unsafe_allow_html=True)
+# ── Theme Toggle ──────────────────────────────────────────────────────────────
+if "theme" not in st.session_state:
+    st.session_state.theme = "light"
+
+with st.sidebar:
+    st.markdown("### 🎨 Theme")
+    dark_mode = st.toggle("Dark mode", value=(st.session_state.theme == "dark"))
+
+st.session_state.theme = "dark" if dark_mode else "light"
+theme = st.session_state.theme
 
 # ── Fetch live API ────────────────────────────────────────────────────────────
 API_URL = "http://18.170.93.124:5000/api/stats"
