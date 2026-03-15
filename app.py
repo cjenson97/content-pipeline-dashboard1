@@ -268,7 +268,7 @@ period_label = "this week" if d["key"] != "all" else "all time"
 with f1:
     st.info(f"""⚡ **Pipeline Speed**
 
-Average **{avg_gen_time} seconds** per article. At {week_total} articles/{period_label} that's ~**{processing_mins} minutes** of processing time.""")
+Average **{avg_gen_time} seconds** per article. At {week_total} articles that's ~**{processing_mins} minutes** of total processing time.""")
 
 with f2:
     st.error(f"""🚨 **Top Error Driver**
