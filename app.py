@@ -10,23 +10,64 @@ st.set_page_config(
     layout="wide"
 )
 
-st.markdown("""
+# ── Dynamic Theme CSS ─────────────────────────────────────────────────────────
+if theme == "dark":
+    bg = "#0f172a"
+    card_bg = "#1e293b"
+    border = "#334155"
+    text = "#e2e8f0"
+    subtext = "#94a3b8"
+else:
+    bg = "#ffffff"
+    card_bg = "#f8fafc"
+    border = "#e2e8f0"
+    text = "#0f172a"
+    subtext = "#64748b"
+
+st.markdown(f"""
 <style>
-    .metric-card {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 16px;
-        text-align: center;
-    }
-    .metric-label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .08em; }
-    .metric-value { font-size: 2rem; font-weight: 900; margin: 4px 0; }
-    .metric-sub   { font-size: 11px; color: #94a3b8; }
-    .compare-header { background:#1e293b; color:#fff; padding:8px 14px; border-radius:8px; font-size:12px; font-weight:700; text-align:center; margin-bottom:10px; }
-    .summary-box { background:#f0f9ff; border:1px solid #bae6fd; border-radius:12px; padding:16px 20px; font-size:13px; line-height:1.8; }
-    .up   { color:#10b981; font-weight:700; }
-    .down { color:#ef4444; font-weight:700; }
-    .same { color:#64748b; font-weight:700; }
+
+.stApp {{
+    background-color: {bg};
+    color: {text};
+}}
+
+.metric-card {{
+    background: {card_bg};
+    border: 1px solid {border};
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+}}
+
+.metric-label {{
+    font-size: 10px;
+    font-weight: 700;
+    color: {subtext};
+    text-transform: uppercase;
+    letter-spacing: .08em;
+}}
+
+.metric-value {{
+    font-size: 2rem;
+    font-weight: 900;
+    margin: 4px 0;
+}}
+
+.metric-sub {{
+    font-size: 11px;
+    color: {subtext};
+}}
+
+.summary-box {{
+    background:{card_bg};
+    border:1px solid {border};
+    border-radius:12px;
+    padding:16px 20px;
+    font-size:13px;
+    line-height:1.8;
+}}
+
 </style>
 """, unsafe_allow_html=True)
 # ── Theme Toggle ──────────────────────────────────────────────────────────────
