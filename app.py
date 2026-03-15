@@ -128,25 +128,47 @@ st.markdown(f"""
         border-color: {border_color} !important;
         color: {text_primary} !important;
     }}
-    /* Toggle button */
-    .dark-toggle-btn {{
-        display: inline-flex;
+    /* ── Slider toggle ── */
+    .toggle-wrap {{
+        display: flex;
         align-items: center;
         gap: 8px;
-        padding: 8px 18px;
-        border-radius: 999px;
-        border: 1.5px solid {border_color};
-        background: {bg_card};
-        color: {text_primary};
-        font-size: 13px;
-        font-weight: 600;
+        justify-content: flex-end;
+        padding-top: 6px;
         cursor: pointer;
-        transition: all 0.2s ease;
         user-select: none;
     }}
-    .dark-toggle-btn:hover {{
-        background: {bg_card_hover};
-        border-color: #6366f1;
+    .toggle-icon {{
+        font-size: 14px;
+        line-height: 1;
+    }}
+    .toggle-track {{
+        position: relative;
+        width: 44px;
+        height: 24px;
+        background: {"#6366f1" if dark else "#cbd5e1"};
+        border-radius: 999px;
+        transition: background 0.25s ease;
+        flex-shrink: 0;
+    }}
+    .toggle-thumb {{
+        position: absolute;
+        top: 3px;
+        left: {"calc(100% - 21px)" if dark else "3px"};
+        width: 18px;
+        height: 18px;
+        background: #ffffff;
+        border-radius: 50%;
+        transition: left 0.25s ease;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    }}
+    /* hide the real streamlit button but keep it clickable */
+    div[data-testid="stButton"] button#theme_toggle_real {{
+        opacity: 0 !important;
+        position: absolute !important;
+        pointer-events: none !important;
+        width: 1px !important;
+        height: 1px !important;
     }}
     /* Metric cards */
     .metric-card {{
@@ -280,11 +302,23 @@ with header_col:
     st.markdown("## 📊 Content Pipeline · Executive Dashboard")
     st.markdown(f"*Generated {date.today().strftime('%d %B %Y')} · Live data refreshes every 60 seconds*")
 with toggle_col:
-    st.markdown("<br>", unsafe_allow_html=True)
-    toggle_label = "☀️ Light Mode" if dark else "🌙 Dark Mode"
-    if st.button(toggle_label, key="theme_toggle", use_container_width=True):
+    # Invisible real button that Streamlit handles
+    if st.button("toggle", key="theme_toggle", label_visibility="collapsed"):
         st.session_state.dark_mode = not st.session_state.dark_mode
         st.rerun()
+    # Visual slider toggle — clicking it triggers the hidden button via JS
+    st.markdown(f"""
+<div class="toggle-wrap" onclick="
+  const btns = window.parent.document.querySelectorAll('button');
+  for (const b of btns) {{
+    if (b.innerText.trim() === 'toggle') {{ b.click(); break; }}
+  }}
+">
+  <span class="toggle-icon">☀️</span>
+  <div class="toggle-track"><div class="toggle-thumb"></div></div>
+  <span class="toggle-icon">🌙</span>
+</div>
+""", unsafe_allow_html=True)
 
 st.divider()
 
