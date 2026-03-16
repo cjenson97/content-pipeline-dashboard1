@@ -112,6 +112,14 @@ st.markdown(css, unsafe_allow_html=True)
 DASHBOARD_BASE = "http://18.170.93.124:5000"
 API_URL = DASHBOARD_BASE + "/api/stats"
 
+# W4 frozen totals — used to detect if the API week field has not yet reset
+W4_FROZEN_TOTAL   = 195
+W4_FROZEN_SUCCESS = 168
+W4_FROZEN_FAILED  = 27
+
+# The ISO week number on which W5 begins
+W5_ISO_WEEK = 12
+
 
 def get_daily_cache_key():
     now = datetime.now()
@@ -208,29 +216,64 @@ WEEK_SCHEDULE = {
 def build_weeks(stats_data):
     now = datetime.now()
     current_iso = now.isocalendar()[1]
-    live_total = 0
-    live_success = 0
-    live_failed = 0
+
+    # Pull today stats from API
+    today_total   = 0
+    today_success = 0
+    today_failed  = 0
+    if stats_data and stats_data.get("today"):
+        today_total   = int(stats_data["today"].get("total")   or 0)
+        today_success = int(stats_data["today"].get("success") or 0)
+        today_failed  = int(stats_data["today"].get("failed")  or 0)
+
+    # Pull week stats from API
+    api_week_total   = 0
+    api_week_success = 0
+    api_week_failed  = 0
     if stats_data and stats_data.get("week"):
-        live_total   = int(stats_data["week"].get("total")   or 0)
-        live_success = int(stats_data["week"].get("success") or 0)
-        live_failed  = int(stats_data["week"].get("failed")  or 0)
+        api_week_total   = int(stats_data["week"].get("total")   or 0)
+        api_week_success = int(stats_data["week"].get("success") or 0)
+        api_week_failed  = int(stats_data["week"].get("failed")  or 0)
+
+    # If we are in W5+ and the API week field still shows W4's exact frozen numbers,
+    # the API counter has not reset yet — treat this week as genuinely fresh (zeros).
+    # Once the API resets, it will show different numbers and we use those.
+    api_stale = (
+        current_iso >= W5_ISO_WEEK
+        and api_week_total   == W4_FROZEN_TOTAL
+        and api_week_success == W4_FROZEN_SUCCESS
+        and api_week_failed  == W4_FROZEN_FAILED
+    )
+
+    if api_stale:
+        # API hasn't reset — use today's live stats only as this week's running total
+        live_total   = today_total
+        live_success = today_success
+        live_failed  = today_failed
+    else:
+        live_total   = api_week_total
+        live_success = api_week_success
+        live_failed  = api_week_failed
+
     live_bot     = round(live_failed * 0.79)
     live_captcha = round(live_failed * 0.07)
     live_pdf     = round(live_failed * 0.11)
     live_generic = max(live_failed - live_bot - live_captcha - live_pdf, 0)
+
     sched = WEEK_SCHEDULE.get(current_iso)
     if sched:
         cur_label = sched["short"] + " Current - " + sched["start"].strftime("%d/%m") + " - " + sched["end"].strftime("%d/%m")
-        cur_key = sched["key"]
+        cur_key   = sched["key"]
     else:
         cur_label = "Current Week W" + str(current_iso)
-        cur_key = "w" + str(current_iso)
+        cur_key   = "w" + str(current_iso)
+
     current_entry = {
         "key": cur_key, "label": cur_label,
         "total": live_total, "success": live_success, "failed": live_failed,
         "bot": live_bot, "captcha": live_captcha, "pdf": live_pdf, "generic": live_generic,
     }
+
     past_isos = sorted(iso for iso in WEEK_SCHEDULE if iso < current_iso)
     weeks = []
     for iso in past_isos:
@@ -244,8 +287,8 @@ def build_weeks(stats_data):
 WEEKS, CURRENT_WEEK = build_weeks(stats)
 
 ALL_TIME = {
-    "key": "all",
-    "label": "All Time - 18/02 - " + date.today().strftime("%d/%m"),
+    "key":     "all",
+    "label":   "All Time - 18/02 - " + date.today().strftime("%d/%m"),
     "total":   sum(w["total"]   for w in WEEKS),
     "success": sum(w["success"] for w in WEEKS),
     "failed":  sum(w["failed"]  for w in WEEKS),
@@ -300,13 +343,6 @@ C_CAPTCHA = PURPLE
 C_PDF     = AMBER
 C_GENERIC = GREY
 
-st.markdown("## Content Pipeline - Executive Dashboard")
-st.markdown("*Generated " + date.today().strftime("%d %B %Y") + " - Live data refreshes every 60 seconds*")
-st.divider()
-
-mode = st.radio("**View mode**", ["Single Period", "Compare Two Periods"], horizontal=True)
-st.divider()
-
 
 def make_tbl_header(cols):
     h = '<thead><tr style="background:' + TABLE_HEAD + ';font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">'
@@ -314,6 +350,14 @@ def make_tbl_header(cols):
         h += '<th style="padding:10px 14px;text-align:' + align + ';border-bottom:1px solid ' + BORDER + ';color:' + TABLE_HEAD_TXT + ';">' + c + '</th>'
     h += '</tr></thead>'
     return h
+
+
+st.markdown("## Content Pipeline - Executive Dashboard")
+st.markdown("*Generated " + date.today().strftime("%d %B %Y") + " - Live data refreshes every 60 seconds*")
+st.divider()
+
+mode = st.radio("**View mode**", ["Single Period", "Compare Two Periods"], horizontal=True)
+st.divider()
 
 
 if mode == "Single Period":
@@ -498,13 +542,14 @@ else:
         diff = round(val_b - val_a, 1)
         if diff > 0:
             diff_color = UP_COL if higher_is_better else DOWN_COL
-            arr = "▲"
+            arr = "up"
         elif diff < 0:
             diff_color = DOWN_COL if higher_is_better else UP_COL
-            arr = "▼"
+            arr = "down"
         else:
             diff_color = SAME_COL
-            arr = "→"
+            arr = "same"
+        arrow_sym = "▲" if arr == "up" else ("▼" if arr == "down" else "→")
         c1, c2 = st.columns(2)
         with c1:
             st.markdown(
@@ -517,9 +562,8 @@ else:
         with c2:
             st.markdown(
                 '<div class="metric-card" style="border-left:4px solid ' + color_b + '">'
-                '<div class="metric-card" style="border-left:4px solid ' + color_b + '">'
                 '<div class="metric-value" style="color:' + color_b + '">' + str(val_b) + unit + '</div>'
-                '<div class="metric-sub" style="color:' + diff_color + ';font-weight:700;">' + arr + ' ' + str(abs(diff)) + unit + ' vs Period A</div>'
+                '<div class="metric-sub" style="color:' + diff_color + ';font-weight:700;">' + arrow_sym + ' ' + str(abs(diff)) + unit + ' vs Period A</div>'
                 '</div>',
                 unsafe_allow_html=True
             )
