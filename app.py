@@ -339,7 +339,7 @@ def make_tbl_header(cols):
     return h
 
 
-st.markdown("## Content Pipeline - Executive Dashboard")
+st.markdown("## 📊 Horizon Scanning Content Gen Pipeline - Dashboard")
 st.markdown("*Generated " + date.today().strftime("%d %B %Y") + " - Live data refreshes every 60 seconds*")
 st.divider()
 
