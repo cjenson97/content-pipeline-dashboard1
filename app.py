@@ -2,6 +2,8 @@ import streamlit as st
 import requests
 import plotly.graph_objects as go
 from datetime import date
+import re
+from urllib.parse import urlparse
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -14,16 +16,14 @@ st.set_page_config(
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
 
-# Small top-right toggle using columns
-_spacer, _toggle_col = st.columns([11, 1])
-with _toggle_col:
+spacer, toggle_col = st.columns([11, 1])
+with toggle_col:
     st.session_state.dark_mode = st.toggle("🌙", value=st.session_state.dark_mode, help="Toggle dark mode")
 
 dm = st.session_state.dark_mode
 
 # ── Theme variables ───────────────────────────────────────────────────────────
 if dm:
-    # Dark palette — muted, easy on the eye
     BG          = "#0f1117"
     SURFACE     = "#1a1d27"
     SURFACE2    = "#21252f"
@@ -33,7 +33,6 @@ if dm:
     TEXT_MUTED  = "#4e5470"
     PLOT_BG     = "rgba(0,0,0,0)"
     GRID_COLOR  = "#1e2233"
-    # Muted semantic colours for dark mode
     GREEN       = "#3dba8c"
     RED         = "#c95f5f"
     AMBER       = "#c9913a"
@@ -51,8 +50,8 @@ if dm:
     UP_COL      = "#3dba8c"
     DOWN_COL    = "#c95f5f"
     SAME_COL    = "#5a5f72"
-    TABLE_HEAD  = "#1a1d27"
-    TABLE_HEAD_TXT = "#7b82a0"
+    TABLE_HEAD      = "#1a1d27"
+    TABLE_HEAD_TXT  = "#7b82a0"
     TABLE_SUC   = "#111f19"
     TABLE_ERR   = "#1f1318"
     TABLE_PUR   = "#18152a"
@@ -87,8 +86,8 @@ else:
     UP_COL      = "#10b981"
     DOWN_COL    = "#ef4444"
     SAME_COL    = "#64748b"
-    TABLE_HEAD  = "#f1f5f9"
-    TABLE_HEAD_TXT = "#64748b"
+    TABLE_HEAD      = "#f1f5f9"
+    TABLE_HEAD_TXT  = "#64748b"
     TABLE_SUC   = "#f0fdf4"
     TABLE_ERR   = "#fef2f2"
     TABLE_PUR   = "#faf5ff"
@@ -100,23 +99,18 @@ else:
 # ── Inject CSS ────────────────────────────────────────────────────────────────
 st.markdown(f"""
 <style>
-    /* ── App background ── */
     .stApp, .stApp > div, section[data-testid="stMain"] > div, div[data-testid="stAppViewContainer"] {{
         background-color: {BG} !important;
         color: {TEXT_PRI} !important;
     }}
-    /* ── Sidebar / tool strip ── */
     section[data-testid="stSidebar"] {{
         background-color: {SURFACE} !important;
     }}
-    /* ── General text ── */
     .stMarkdown, .stMarkdown p, .stMarkdown li, label, .stRadio label,
     div[data-testid="stMarkdownContainer"] p {{
         color: {TEXT_PRI} !important;
     }}
-    /* ── Dividers ── */
     hr {{ border-color: {BORDER} !important; }}
-    /* ── Select / radio ── */
     div[data-baseweb="select"] > div {{
         background-color: {SURFACE} !important;
         border-color: {BORDER} !important;
@@ -127,13 +121,11 @@ st.markdown(f"""
     div[data-baseweb="menu"] li {{ color: {TEXT_PRI} !important; background-color: {SURFACE} !important; }}
     div[data-baseweb="menu"] li:hover {{ background-color: {SURFACE2} !important; }}
     div[data-baseweb="radio"] label {{ color: {TEXT_PRI} !important; }}
-    /* ── Info / error / success boxes ── */
     div[data-testid="stAlert"] {{
         background-color: {SURFACE} !important;
         border-color: {BORDER} !important;
         color: {TEXT_PRI} !important;
     }}
-    /* ── Metric cards (custom HTML) — colours handled inline ── */
     .metric-card {{
         background: {SURFACE};
         border: 1px solid {BORDER};
@@ -149,16 +141,15 @@ st.markdown(f"""
     .up   {{ color:{UP_COL};   font-weight:700; }}
     .down {{ color:{DOWN_COL}; font-weight:700; }}
     .same {{ color:{SAME_COL}; font-weight:700; }}
-    /* ── Table ── */
     table {{ color: {TEXT_PRI} !important; }}
     td, th {{ color: {TEXT_PRI} !important; }}
-    /* ── Toggle ── */
     div[data-testid="stToggle"] label {{ color: {TEXT_SEC} !important; }}
 </style>
 """, unsafe_allow_html=True)
 
 # ── Fetch live API ────────────────────────────────────────────────────────────
-API_URL = "http://18.170.93.124:5000/api/stats"
+DASHBOARD_BASE = "http://18.170.93.124:5000"
+API_URL        = f"{DASHBOARD_BASE}/api/stats"
 
 @st.cache_data(ttl=60)
 def fetch_stats():
@@ -167,6 +158,77 @@ def fetch_stats():
         return r.json()
     except Exception:
         return None
+
+@st.cache_data(ttl=60)
+def fetch_failing_sources():
+    """
+    Scrapes all failed articles from the dashboard and returns
+    a list of (domain, count) tuples sorted by count desc.
+    Each failed article counts as 1, even if the same domain appears multiple times.
+    """
+    all_failed = []
+    offset = 0
+
+    while True:
+        try:
+            r = requests.get(
+                f"{DASHBOARD_BASE}/generated-list-more",
+                params={"filter": "all", "vertical": "all", "offset": offset},
+                timeout=15
+            )
+            html = r.text
+        except Exception:
+            break
+
+        article_divs = html.split('class="article-item')
+        article_divs.pop(0)  # remove leading empty chunk
+
+        if not article_divs:
+            break
+
+        for div in article_divs:
+            # Only keep articles with a recognised failure status
+            error_match = re.search(r'text-red-500[^>]*>\s*\n?\s*([\w\s]+)\n?\s*</p', div)
+            if not error_match:
+                continue
+            error_type = error_match.group(1).strip()
+            if error_type not in ("Bot blocked", "Processing error", "Timed out", "No content"):
+                continue
+
+            id_match = re.search(r'hx-get="/article/(\d+)/([a-f0-9]{32})"', div)
+            if id_match:
+                all_failed.append({
+                    "id":    id_match.group(1),
+                    "guid":  id_match.group(2),
+                    "error": error_type,
+                })
+
+        if "Load more" not in html:
+            break
+        offset += 100
+        if offset >= 700:
+            break
+
+    # Fetch each failed article's detail page to extract the source URL
+    domain_counts = {}
+    for art in all_failed:
+        try:
+            detail = requests.get(
+                f"{DASHBOARD_BASE}/article/{art['id']}/{art['guid']}",
+                timeout=10
+            ).text
+            url_match = re.search(r'href="(https?://[^"]+)"', detail)
+            if not url_match:
+                continue
+            raw_url = url_match.group(1)
+            parsed  = urlparse(raw_url)
+            # Group by domain, stripping www.
+            domain = parsed.netloc.lstrip("www.")
+            domain_counts[domain] = domain_counts.get(domain, 0) + 1
+        except Exception:
+            continue
+
+    return sorted(domain_counts.items(), key=lambda x: x[1], reverse=True)
 
 stats = fetch_stats()
 
@@ -177,13 +239,15 @@ WEEKS = [
     {"key":"w3","label":"W3  —  02/03 – 08/03","total":165,"success":138,"failed":27,"bot":21,"captcha":2,"pdf":3,"generic":1},
     {"key":"w4","label":"W4  ★  Current  —  09/03 – 15/03","total":195,"success":168,"failed":27,"bot":22,"captcha":2,"pdf":3,"generic":0},
 ]
+
 ALL_TIME = {
     "key":"all","label":"All Time  —  18/02 – 15/03",
     "total":645,"success":537,"failed":108,
     "bot":85,"captcha":8,"pdf":12,"generic":3
 }
-ALL_DATA  = WEEKS + [ALL_TIME]
-OPTIONS   = [w["label"] for w in ALL_DATA]
+
+ALL_DATA = WEEKS + [ALL_TIME]
+OPTIONS  = [w["label"] for w in ALL_DATA]
 
 avg_gen_time = 40
 if stats and stats.get("avg_gen_time"):
@@ -223,7 +287,6 @@ def base_layout(height=250, title=None):
         layout["title"] = dict(text=title, font=dict(color=TEXT_PRI, size=13))
     return layout
 
-# Chart colours — muted in dark mode
 C_SUCCESS = GREEN
 C_BOT     = RED
 C_CAPTCHA = PURPLE
@@ -253,12 +316,13 @@ if mode == "Single Period":
     cp  = captcha_pct(d)
     pp  = pdf_pct(d)
     gp  = generic_pct(d)
-    excl_bot       = d["captcha"] + d["pdf"] + d["generic"]
-    er_without_bot = round(excl_bot / d["total"] * 100, 1)
-    processing_mins = round(avg_gen_time * d["total"] / 60)
-    period_label   = "this week" if d["key"] != "all" else "all time"
 
-    # KPI cards
+    excl_bot        = d["captcha"] + d["pdf"] + d["generic"]
+    er_without_bot  = round(excl_bot / d["total"] * 100, 1)
+    processing_mins = round(avg_gen_time * d["total"] / 60)
+    period_label    = "this week" if d["key"] != "all" else "all time"
+
+    # ── KPI cards ─────────────────────────────────────────────────────────────
     c1, c2, c3, c4, c5 = st.columns(5)
     vol_label = "Weekly Volume" if d["key"] != "all" else "Total Volume"
     vol_sub   = "articles this week" if d["key"] != "all" else "articles all time"
@@ -278,8 +342,9 @@ if mode == "Single Period":
 
     st.divider()
 
-    # Charts
+    # ── Charts ────────────────────────────────────────────────────────────────
     col_bar, col_donut = st.columns([3, 2])
+
     with col_bar:
         st.markdown(f"**Volume by Outcome — {d['label']}**")
         bar = go.Figure(go.Bar(
@@ -308,7 +373,7 @@ if mode == "Single Period":
 
     st.divider()
 
-    # Error trends line chart
+    # ── Error trends line chart ───────────────────────────────────────────────
     st.markdown("**Error Trends — Weekly Since Monitoring Start (18 Feb 2026)**")
     wl = [w["label"].split("—")[0].strip() for w in WEEKS]
     fig_line = go.Figure()
@@ -328,7 +393,7 @@ if mode == "Single Period":
 
     st.divider()
 
-    # Error table
+    # ── Error type detail table ───────────────────────────────────────────────
     st.markdown(f"**Error Type Detail — {d['label']}**")
     st.markdown(f"""
 <table style="width:100%;border-collapse:collapse;font-size:13px;">
@@ -349,15 +414,74 @@ if mode == "Single Period":
 
     st.divider()
 
-    # Footer cards
-    f1, f2, f3 = st.columns(3)
-    with f1:
-        st.info(f"⚡ **Pipeline Speed**\n\nAverage **{avg_gen_time} seconds** per article. At {d['total']} articles that's ~**{processing_mins} minutes** of total processing time.")
-    with f2:
-        st.error(f"🚨 **Top Error Driver**\n\nBot Protection accounts for **{bp}%** of all failures. Fixing this would reduce error rate from {er}% to ~**{er_without_bot}%**.")
-    with f3:
-        st.success(f"📈 **Weekly Throughput**\n\n**{d['total']} articles** {period_label}. **{d['failed']} articles** required manual analyst intervention.")
+    # ── Top 5 Failing Sources — Live ─────────────────────────────────────────
+    st.markdown("**🚨 Top 5 Failing Sources — Live**")
 
+    with st.spinner("Loading failing source data..."):
+        failing_sources = fetch_failing_sources()
+
+    top5 = failing_sources[:5]
+
+    if top5:
+        max_count   = top5[0][1]
+        rank_colors = [RED, AMBER, AMBER, TEXT_SEC, TEXT_SEC]
+        row_bgs     = [TABLE_ERR, TABLE_AMB, TABLE_AMB, TABLE_BASE, TABLE_BASE]
+        rows_html   = ""
+
+        for i, (domain, count) in enumerate(top5):
+            bar_pct  = round(count / max_count * 100)
+            col      = rank_colors[i]
+            row_bg   = row_bgs[i]
+            rows_html += f"""
+  <tr style="background:{row_bg};">
+    <td style="padding:10px 14px;border-bottom:1px solid {BORDER};color:{col};font-weight:700;font-size:15px;">#{i+1}</td>
+    <td style="padding:10px 14px;border-bottom:1px solid {BORDER};font-weight:600;color:{TEXT_PRI};font-family:monospace;font-size:12px;">{domain}</td>
+    <td style="padding:10px 14px;border-bottom:1px solid {BORDER};text-align:right;font-weight:700;color:{col};">{count}</td>
+    <td style="padding:10px 28px 10px 14px;border-bottom:1px solid {BORDER};width:35%;">
+      <div style="background:{BORDER};border-radius:4px;height:8px;overflow:hidden;">
+        <div style="background:{col};width:{bar_pct}%;height:8px;border-radius:4px;"></div>
+      </div>
+    </td>
+  </tr>"""
+
+        total_failures  = sum(c for _, c in failing_sources)
+        unique_sources  = len(failing_sources)
+
+        st.markdown(f"""
+<table style="width:100%;border-collapse:collapse;font-size:13px;">
+  <thead>
+    <tr style="background:{TABLE_HEAD};color:{TABLE_HEAD_TXT};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">
+      <th style="padding:10px 14px;text-align:left;border-bottom:1px solid {BORDER};">Rank</th>
+      <th style="padding:10px 14px;text-align:left;border-bottom:1px solid {BORDER};">Source Domain</th>
+      <th style="padding:10px 14px;text-align:right;border-bottom:1px solid {BORDER};">Failures</th>
+      <th style="padding:10px 14px;text-align:left;border-bottom:1px solid {BORDER};">Relative Volume</th>
+    </tr>
+  </thead>
+  <tbody>
+{rows_html}
+  </tbody>
+</table>""", unsafe_allow_html=True)
+
+        st.markdown(
+            f'<p style="font-size:11px;color:{TEXT_MUTED};margin-top:8px;">'
+            f'Based on {total_failures} total failed articles across {unique_sources} unique sources · refreshes every 60s'
+            f'</p>',
+            unsafe_allow_html=True
+        )
+    else:
+        st.info("No failing source data available.")
+
+    st.divider()
+
+    # ── Footer cards ──────────────────────────────────────────────────────────
+    f1, f2, f3 = st.columns(3)
+
+    with f1:
+        st.info(f"⚡ Pipeline Speed\n\nAverage {avg_gen_time} seconds per article. At {d['total']} articles that's ~**{processing_mins} minutes** of total processing time.")
+    with f2:
+        st.error(f"🚨 Top Error Driver\n\nBot Protection accounts for {bp}% of all failures. Fixing this would reduce error rate from {er}% to ~**{er_without_bot}%**.")
+    with f3:
+        st.success(f"📈 Weekly Throughput\n\n**{d['total']} articles** {period_label}. {d['failed']} articles required manual analyst intervention.")
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # COMPARE VIEW
@@ -372,29 +496,27 @@ else:
     a = get_data(sel1)
     b = get_data(sel2)
 
-    sr_a, sr_b   = success_rate(a), success_rate(b)
-    er_a, er_b   = error_rate(a),   error_rate(b)
-    bp_a, bp_b   = bot_pct(a),      bot_pct(b)
+    sr_a, sr_b = success_rate(a), success_rate(b)
+    er_a, er_b = error_rate(a),   error_rate(b)
+    bp_a, bp_b = bot_pct(a),      bot_pct(b)
 
     st.divider()
 
-    # Side by side headers
     h1, h2 = st.columns(2)
     with h1:
         st.markdown(f'<div class="compare-header">🅐 {a["label"]}</div>', unsafe_allow_html=True)
     with h2:
         st.markdown(f'<div class="compare-header">🅑 {b["label"]}</div>', unsafe_allow_html=True)
 
-    # KPI comparison
     def kpi_card(label, val_a, val_b, unit="", higher_is_better=True, color_a=None, color_b=None):
         color_a = color_a or INDIGO
         color_b = color_b or INDIGO
         diff = round(val_b - val_a, 1)
         if diff > 0:
-            arrow = "▲" if higher_is_better else "▼"
+            arrow      = "▲" if higher_is_better else "▼"
             diff_color = UP_COL if higher_is_better else DOWN_COL
         elif diff < 0:
-            arrow = "▼" if higher_is_better else "▲"
+            arrow      = "▼" if higher_is_better else "▲"
             diff_color = DOWN_COL if higher_is_better else UP_COL
         else:
             arrow, diff_color = "→", SAME_COL
@@ -414,7 +536,6 @@ else:
 
     st.divider()
 
-    # Side by side bar charts
     ch1, ch2 = st.columns(2)
     for col, d, lbl in [(ch1, a, "A"), (ch2, b, "B")]:
         with col:
@@ -428,7 +549,6 @@ else:
 
     st.divider()
 
-    # ── Auto-generated summary ─────────────────────────────────────────────────
     st.markdown("### 📝 Comparison Summary")
 
     def trend(val_a, val_b, higher_is_better=True):
@@ -439,19 +559,19 @@ else:
         else:
             return ("unchanged", "same")
 
-    vol_trend,  vol_cls  = trend(a["total"],   b["total"])
+    vol_trend,  vol_cls  = trend(a["total"],    b["total"])
     sr_trend,   sr_cls   = trend(sr_a,          sr_b)
-    er_trend,   er_cls   = trend(er_a,          er_b,   higher_is_better=False)
-    bot_trend,  bot_cls  = trend(a["bot"],      b["bot"],  higher_is_better=False)
-    pdf_trend,  pdf_cls  = trend(a["pdf"],      b["pdf"],  higher_is_better=False)
-    cap_trend,  cap_cls  = trend(a["captcha"],  b["captcha"], higher_is_better=False)
+    er_trend,   er_cls   = trend(er_a,          er_b,          higher_is_better=False)
+    bot_trend,  bot_cls  = trend(a["bot"],      b["bot"],      higher_is_better=False)
+    pdf_trend,  pdf_cls  = trend(a["pdf"],      b["pdf"],      higher_is_better=False)
+    cap_trend,  cap_cls  = trend(a["captcha"],  b["captcha"],  higher_is_better=False)
 
-    vol_diff  = b["total"]   - a["total"]
-    sr_diff   = round(sr_b   - sr_a,  1)
-    er_diff   = round(er_b   - er_a,  1)
-    bot_diff  = b["bot"]     - a["bot"]
-    pdf_diff  = b["pdf"]     - a["pdf"]
-    cap_diff  = b["captcha"] - a["captcha"]
+    vol_diff = b["total"]   - a["total"]
+    sr_diff  = round(sr_b   - sr_a,  1)
+    er_diff  = round(er_b   - er_a,  1)
+    bot_diff = b["bot"]     - a["bot"]
+    pdf_diff = b["pdf"]     - a["pdf"]
+    cap_diff = b["captcha"] - a["captcha"]
 
     def fmt_diff(val, cls):
         sign = "+" if val > 0 else ""
@@ -471,7 +591,7 @@ else:
 🤖 <strong>Bot Protection errors</strong> {bot_trend} from <strong>{a['bot']}</strong> to <strong>{b['bot']}</strong> ({fmt_diff(bot_diff, bot_cls)}) — 
 {'this remains the top error driver and the primary focus for remediation.' if b['bot'] > b['pdf'] and b['bot'] > b['captcha'] else 'bot protection is no longer the top error driver.'}<br><br>
 
-🟡 <strong>PDF Timeouts</strong> {pdf_trend} ({fmt_diff(pdf_diff, pdf_cls)}) &nbsp;·&nbsp; 
+🟡 <strong>PDF Timeouts</strong> {pdf_trend} ({fmt_diff(pdf_diff, pdf_cls)}) &nbsp;·&nbsp;
 🟣 <strong>CAPTCHA errors</strong> {cap_trend} ({fmt_diff(cap_diff, cap_cls)}).<br><br>
 
 {'⚠️ <strong>Watch:</strong> Error rate increased period-on-period. Review source access patterns.' if er_cls == 'down' else '✅ <strong>Positive:</strong> Overall pipeline performance improved between these two periods.' if sr_cls == 'up' else '➡️ Performance was broadly stable between these two periods.'}
