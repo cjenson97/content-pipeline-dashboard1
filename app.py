@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Horizon Scannong Content Gen · Dashboard",
+    page_title="Horizon Scanning Content Gen · Dashboard",
     page_icon="📊",
     layout="wide"
 )
