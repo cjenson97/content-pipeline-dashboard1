@@ -112,12 +112,7 @@ st.markdown(css, unsafe_allow_html=True)
 DASHBOARD_BASE = "http://18.170.93.124:5000"
 API_URL = DASHBOARD_BASE + "/api/stats"
 
-# W4 frozen totals — used to detect if the API week field has not yet reset
-W4_FROZEN_TOTAL   = 195
-W4_FROZEN_SUCCESS = 168
-W4_FROZEN_FAILED  = 27
-
-# The ISO week number on which W5 begins
+# ISO week on which W5 begins
 W5_ISO_WEEK = 12
 
 
@@ -217,43 +212,35 @@ def build_weeks(stats_data):
     now = datetime.now()
     current_iso = now.isocalendar()[1]
 
-    # Pull today stats from API
-    today_total   = 0
-    today_success = 0
-    today_failed  = 0
-    if stats_data and stats_data.get("today"):
-        today_total   = int(stats_data["today"].get("total")   or 0)
-        today_success = int(stats_data["today"].get("success") or 0)
-        today_failed  = int(stats_data["today"].get("failed")  or 0)
+    # All-time totals from API
+    all_total   = 0
+    all_success = 0
+    all_failed  = 0
+    if stats_data and stats_data.get("all"):
+        all_total   = int(stats_data["all"].get("total")   or 0)
+        all_success = int(stats_data["all"].get("success") or 0)
+        all_failed  = int(stats_data["all"].get("failed")  or 0)
 
-    # Pull week stats from API
-    api_week_total   = 0
-    api_week_success = 0
-    api_week_failed  = 0
-    if stats_data and stats_data.get("week"):
-        api_week_total   = int(stats_data["week"].get("total")   or 0)
-        api_week_success = int(stats_data["week"].get("success") or 0)
-        api_week_failed  = int(stats_data["week"].get("failed")  or 0)
+    # Historic sums (W1-W4 frozen)
+    historic_sum_total   = sum(w["total"]   for w in HISTORIC_WEEKS)
+    historic_sum_success = sum(w["success"] for w in HISTORIC_WEEKS)
+    historic_sum_failed  = sum(w["failed"]  for w in HISTORIC_WEEKS)
 
-    # If we are in W5+ and the API week field still shows W4's exact frozen numbers,
-    # the API counter has not reset yet — treat this week as genuinely fresh (zeros).
-    # Once the API resets, it will show different numbers and we use those.
-    api_stale = (
-        current_iso >= W5_ISO_WEEK
-        and api_week_total   == W4_FROZEN_TOTAL
-        and api_week_success == W4_FROZEN_SUCCESS
-        and api_week_failed  == W4_FROZEN_FAILED
-    )
-
-    if api_stale:
-        # API hasn't reset — use today's live stats only as this week's running total
-        live_total   = today_total
-        live_success = today_success
-        live_failed  = today_failed
+    if current_iso >= W5_ISO_WEEK:
+        # W5+ = everything in all-time that isn't in a historic week
+        # The API all.total keeps incrementing so this is always exact
+        live_total   = max(all_total   - historic_sum_total,   0)
+        live_success = max(all_success - historic_sum_success, 0)
+        live_failed  = max(all_failed  - historic_sum_failed,  0)
     else:
-        live_total   = api_week_total
-        live_success = api_week_success
-        live_failed  = api_week_failed
+        # Pre-W5: use the API week field directly
+        live_total   = 0
+        live_success = 0
+        live_failed  = 0
+        if stats_data and stats_data.get("week"):
+            live_total   = int(stats_data["week"].get("total")   or 0)
+            live_success = int(stats_data["week"].get("success") or 0)
+            live_failed  = int(stats_data["week"].get("failed")  or 0)
 
     live_bot     = round(live_failed * 0.79)
     live_captcha = round(live_failed * 0.07)
@@ -301,7 +288,7 @@ ALL_TIME = {
 ALL_DATA = WEEKS + [ALL_TIME]
 OPTIONS  = [w["label"] for w in ALL_DATA]
 
-avg_gen_time  = 40
+avg_gen_time  = 0
 today_total   = 0
 today_success = 0
 today_failed  = 0
@@ -387,11 +374,15 @@ if mode == "Single Period":
     with c2:
         st.markdown('<div class="metric-card" style="border-left:4px solid ' + GREEN + '"><div class="metric-label">Success Rate</div><div class="metric-value" style="color:' + GREEN + '">' + str(sr) + '%</div><div class="metric-sub">' + str(d["success"]) + ' of ' + str(d["total"]) + ' articles</div></div>', unsafe_allow_html=True)
     with c3:
-        st.markdown('<div class="metric-card" style="border-left:4px solid ' + AMBER + '"><div class="metric-label">Avg Gen Time</div><div class="metric-value" style="color:' + AMBER + '">' + str(avg_gen_time) + 's</div><div class="metric-sub">per article (live)</div></div>', unsafe_allow_html=True)
+        avg_display = str(avg_gen_time) + "s" if avg_gen_time > 0 else "n/a"
+        st.markdown('<div class="metric-card" style="border-left:4px solid ' + AMBER + '"><div class="metric-label">Avg Gen Time</div><div class="metric-value" style="color:' + AMBER + '">' + avg_display + '</div><div class="metric-sub">per article (live)</div></div>', unsafe_allow_html=True)
     with c4:
         st.markdown('<div class="metric-card" style="border-left:4px solid ' + AMBER + '"><div class="metric-label">Today\'s Output</div><div class="metric-value" style="color:' + tc + '">' + str(today_total) + '</div><div class="metric-sub">' + ts + '</div></div>', unsafe_allow_html=True)
     with c5:
-        st.markdown('<div class="metric-card" style="border-left:4px solid ' + RED + '"><div class="metric-label">Error Rate</div><div class="metric-value" style="color:' + RED + '">' + str(er) + '%</div><div class="metric-sub">' + str(d["failed"]) + ' of ' + str(d["total"]) + ' failed</div></div>', unsafe_allow_html=True)
+        er_color = TEXT_MUTED if er == 0 else RED
+        er_display = "0%" if er == 0 else str(er) + "%"
+        er_sub = "no failures this week" if d["failed"] == 0 else str(d["failed"]) + " of " + str(d["total"]) + " failed"
+        st.markdown('<div class="metric-card" style="border-left:4px solid ' + er_color + '"><div class="metric-label">Error Rate</div><div class="metric-value" style="color:' + er_color + '">' + er_display + '</div><div class="metric-sub">' + er_sub + '</div></div>', unsafe_allow_html=True)
 
     st.divider()
 
@@ -526,7 +517,7 @@ else:
     b = get_data(sel2)
 
     sr_a, sr_b = success_rate(a), success_rate(b)
-    er_a, er_b = error_rate(a),   error_rate(b)
+    er_a, er_b = error_rate(a), error_rate(b)
 
     st.divider()
 
@@ -542,14 +533,13 @@ else:
         diff = round(val_b - val_a, 1)
         if diff > 0:
             diff_color = UP_COL if higher_is_better else DOWN_COL
-            arr = "up"
+            arrow_sym = "▲"
         elif diff < 0:
             diff_color = DOWN_COL if higher_is_better else UP_COL
-            arr = "down"
+            arrow_sym = "▼"
         else:
             diff_color = SAME_COL
-            arr = "same"
-        arrow_sym = "▲" if arr == "up" else ("▼" if arr == "down" else "→")
+            arrow_sym = "→"
         c1, c2 = st.columns(2)
         with c1:
             st.markdown(
