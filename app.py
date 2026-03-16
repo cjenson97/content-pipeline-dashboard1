@@ -317,7 +317,7 @@ C_PDF     = AMBER
 C_GENERIC = GREY
 
 # ── Header ────────────────────────────────────────────────────────────────────
-st.markdown("## 📊 Content Pipeline · Executive Dashboard")
+st.markdown("## 📊 Horizon Scanning Content Pipeline · Dashboard")
 st.markdown(f"*Generated {date.today().strftime('%d %B %Y')} · Live data refreshes every 60 seconds*")
 st.divider()
 
