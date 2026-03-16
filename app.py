@@ -1,9 +1,10 @@
 import streamlit as st
 import requests
 import plotly.graph_objects as go
-from datetime import date
+from datetime import date, datetime
 import re
 from urllib.parse import urlparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -24,77 +25,77 @@ dm = st.session_state.dark_mode
 
 # ── Theme variables ───────────────────────────────────────────────────────────
 if dm:
-    BG          = "#0f1117"
-    SURFACE     = "#1a1d27"
-    SURFACE2    = "#21252f"
-    BORDER      = "#2d3142"
-    TEXT_PRI    = "#d4d8e8"
-    TEXT_SEC    = "#7b82a0"
-    TEXT_MUTED  = "#4e5470"
-    PLOT_BG     = "rgba(0,0,0,0)"
-    GRID_COLOR  = "#1e2233"
-    GREEN       = "#3dba8c"
-    RED         = "#c95f5f"
-    AMBER       = "#c9913a"
-    PURPLE      = "#7c6fbf"
-    GREY        = "#5a5f72"
-    INDIGO      = "#6b71c4"
-    INFO_BG     = "#131a2e"
-    INFO_BORDER = "#1e3354"
-    ERR_BG      = "#1f1318"
-    ERR_BORDER  = "#3d1f1f"
-    SUC_BG      = "#111f19"
-    SUC_BORDER  = "#1a3328"
-    SUMMARY_BG  = "#131a24"
-    SUMMARY_BOR = "#1e3048"
-    UP_COL      = "#3dba8c"
-    DOWN_COL    = "#c95f5f"
-    SAME_COL    = "#5a5f72"
-    TABLE_HEAD      = "#1a1d27"
-    TABLE_HEAD_TXT  = "#7b82a0"
-    TABLE_SUC   = "#111f19"
-    TABLE_ERR   = "#1f1318"
-    TABLE_PUR   = "#18152a"
-    TABLE_AMB   = "#1e1910"
-    TABLE_BASE  = "#161920"
-    COMPARE_HDR = "#1a1d27"
-    COMPARE_TXT = "#d4d8e8"
+    BG             = "#0f1117"
+    SURFACE        = "#1a1d27"
+    SURFACE2       = "#21252f"
+    BORDER         = "#2d3142"
+    TEXT_PRI       = "#d4d8e8"
+    TEXT_SEC       = "#7b82a0"
+    TEXT_MUTED     = "#4e5470"
+    PLOT_BG        = "rgba(0,0,0,0)"
+    GRID_COLOR     = "#1e2233"
+    GREEN          = "#3dba8c"
+    RED            = "#c95f5f"
+    AMBER          = "#c9913a"
+    PURPLE         = "#7c6fbf"
+    GREY           = "#5a5f72"
+    INDIGO         = "#6b71c4"
+    INFO_BG        = "#131a2e"
+    INFO_BORDER    = "#1e3354"
+    ERR_BG         = "#1f1318"
+    ERR_BORDER     = "#3d1f1f"
+    SUC_BG         = "#111f19"
+    SUC_BORDER     = "#1a3328"
+    SUMMARY_BG     = "#131a24"
+    SUMMARY_BOR    = "#1e3048"
+    UP_COL         = "#3dba8c"
+    DOWN_COL       = "#c95f5f"
+    SAME_COL       = "#5a5f72"
+    TABLE_HEAD     = "#1a1d27"
+    TABLE_HEAD_TXT = "#7b82a0"
+    TABLE_SUC      = "#111f19"
+    TABLE_ERR      = "#1f1318"
+    TABLE_PUR      = "#18152a"
+    TABLE_AMB      = "#1e1910"
+    TABLE_BASE     = "#161920"
+    COMPARE_HDR    = "#1a1d27"
+    COMPARE_TXT    = "#d4d8e8"
 else:
-    BG          = "#ffffff"
-    SURFACE     = "#f8fafc"
-    SURFACE2    = "#f1f5f9"
-    BORDER      = "#e2e8f0"
-    TEXT_PRI    = "#0f172a"
-    TEXT_SEC    = "#64748b"
-    TEXT_MUTED  = "#94a3b8"
-    PLOT_BG     = "rgba(0,0,0,0)"
-    GRID_COLOR  = "#f1f5f9"
-    GREEN       = "#10b981"
-    RED         = "#ef4444"
-    AMBER       = "#f59e0b"
-    PURPLE      = "#8b5cf6"
-    GREY        = "#6b7280"
-    INDIGO      = "#6366f1"
-    INFO_BG     = "#f0f9ff"
-    INFO_BORDER = "#bae6fd"
-    ERR_BG      = "#fef2f2"
-    ERR_BORDER  = "#fecaca"
-    SUC_BG      = "#f0fdf4"
-    SUC_BORDER  = "#bbf7d0"
-    SUMMARY_BG  = "#f0f9ff"
-    SUMMARY_BOR = "#bae6fd"
-    UP_COL      = "#10b981"
-    DOWN_COL    = "#ef4444"
-    SAME_COL    = "#64748b"
-    TABLE_HEAD      = "#f1f5f9"
-    TABLE_HEAD_TXT  = "#64748b"
-    TABLE_SUC   = "#f0fdf4"
-    TABLE_ERR   = "#fef2f2"
-    TABLE_PUR   = "#faf5ff"
-    TABLE_AMB   = "#fffbeb"
-    TABLE_BASE  = "#f8fafc"
-    COMPARE_HDR = "#1e293b"
-    COMPARE_TXT = "#ffffff"
+    BG             = "#ffffff"
+    SURFACE        = "#f8fafc"
+    SURFACE2       = "#f1f5f9"
+    BORDER         = "#e2e8f0"
+    TEXT_PRI       = "#0f172a"
+    TEXT_SEC       = "#64748b"
+    TEXT_MUTED     = "#94a3b8"
+    PLOT_BG        = "rgba(0,0,0,0)"
+    GRID_COLOR     = "#f1f5f9"
+    GREEN          = "#10b981"
+    RED            = "#ef4444"
+    AMBER          = "#f59e0b"
+    PURPLE         = "#8b5cf6"
+    GREY           = "#6b7280"
+    INDIGO         = "#6366f1"
+    INFO_BG        = "#f0f9ff"
+    INFO_BORDER    = "#bae6fd"
+    ERR_BG         = "#fef2f2"
+    ERR_BORDER     = "#fecaca"
+    SUC_BG         = "#f0fdf4"
+    SUC_BORDER     = "#bbf7d0"
+    SUMMARY_BG     = "#f0f9ff"
+    SUMMARY_BOR    = "#bae6fd"
+    UP_COL         = "#10b981"
+    DOWN_COL       = "#ef4444"
+    SAME_COL       = "#64748b"
+    TABLE_HEAD     = "#f1f5f9"
+    TABLE_HEAD_TXT = "#64748b"
+    TABLE_SUC      = "#f0fdf4"
+    TABLE_ERR      = "#fef2f2"
+    TABLE_PUR      = "#faf5ff"
+    TABLE_AMB      = "#fffbeb"
+    TABLE_BASE     = "#f8fafc"
+    COMPARE_HDR    = "#1e293b"
+    COMPARE_TXT    = "#ffffff"
 
 # ── Inject CSS ────────────────────────────────────────────────────────────────
 st.markdown(f"""
@@ -147,10 +148,25 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-# ── Fetch live API ────────────────────────────────────────────────────────────
+# ── Constants ─────────────────────────────────────────────────────────────────
 DASHBOARD_BASE = "http://18.170.93.124:5000"
 API_URL        = f"{DASHBOARD_BASE}/api/stats"
 
+# ── 4pm daily cache key ───────────────────────────────────────────────────────
+def get_daily_cache_key():
+    """
+    Returns a string that changes once per day at 16:00.
+    Before 4pm  → uses yesterday's date  (so cache from yesterday 4pm is still valid)
+    After 4pm   → uses today's date      (triggers a fresh fetch)
+    """
+    now = datetime.now()
+    if now.hour >= 16:
+        return now.strftime("%Y-%m-%d")
+    else:
+        from datetime import timedelta
+        return (now - timedelta(days=1)).strftime("%Y-%m-%d")
+
+# ── Live stats (60s cache) ────────────────────────────────────────────────────
 @st.cache_data(ttl=60)
 def fetch_stats():
     try:
@@ -159,16 +175,18 @@ def fetch_stats():
     except Exception:
         return None
 
-@st.cache_data(ttl=60)
-def fetch_failing_sources():
+# ── Top 5 failing sources (refreshes daily at 4pm) ───────────────────────────
+@st.cache_data(ttl=86400)  # 24h safety net — the cache_key does the real scheduling
+def fetch_failing_sources(_cache_key: str):
     """
-    Scrapes all failed articles from the dashboard and returns
+    Scrapes all failed articles in parallel and returns
     a list of (domain, count) tuples sorted by count desc.
-    Each failed article counts as 1, even if the same domain appears multiple times.
+    _cache_key changes at 4pm each day, forcing a fresh run.
     """
     all_failed = []
     offset = 0
 
+    # ── Step 1: collect all failed article IDs ────────────────────────────────
     while True:
         try:
             r = requests.get(
@@ -181,20 +199,18 @@ def fetch_failing_sources():
             break
 
         article_divs = html.split('class="article-item')
-        article_divs.pop(0)  # remove leading empty chunk
+        article_divs.pop(0)
 
         if not article_divs:
             break
 
         for div in article_divs:
-            # Only keep articles with a recognised failure status
             error_match = re.search(r'text-red-500[^>]*>\s*\n?\s*([\w\s]+)\n?\s*</p', div)
             if not error_match:
                 continue
             error_type = error_match.group(1).strip()
             if error_type not in ("Bot blocked", "Processing error", "Timed out", "No content"):
                 continue
-
             id_match = re.search(r'hx-get="/article/(\d+)/([a-f0-9]{32})"', div)
             if id_match:
                 all_failed.append({
@@ -209,9 +225,8 @@ def fetch_failing_sources():
         if offset >= 700:
             break
 
-    # Fetch each failed article's detail page to extract the source URL
-    domain_counts = {}
-    for art in all_failed:
+    # ── Step 2: fetch detail pages in parallel ────────────────────────────────
+    def fetch_domain(art):
         try:
             detail = requests.get(
                 f"{DASHBOARD_BASE}/article/{art['id']}/{art['guid']}",
@@ -219,20 +234,27 @@ def fetch_failing_sources():
             ).text
             url_match = re.search(r'href="(https?://[^"]+)"', detail)
             if not url_match:
-                continue
-            raw_url = url_match.group(1)
-            parsed  = urlparse(raw_url)
-            # Group by domain, stripping www.
-            domain = parsed.netloc.lstrip("www.")
-            domain_counts[domain] = domain_counts.get(domain, 0) + 1
+                return None
+            parsed = urlparse(url_match.group(1))
+            return parsed.netloc.lstrip("www.")
         except Exception:
-            continue
+            return None
+
+    domain_counts = {}
+    with ThreadPoolExecutor(max_workers=20) as executor:
+        futures = {executor.submit(fetch_domain, art): art for art in all_failed}
+        for future in as_completed(futures):
+            domain = future.result()
+            if domain:
+                domain_counts[domain] = domain_counts.get(domain, 0) + 1
 
     return sorted(domain_counts.items(), key=lambda x: x[1], reverse=True)
 
-stats = fetch_stats()
+# ── Fetch data ────────────────────────────────────────────────────────────────
+stats      = fetch_stats()
+cache_key  = get_daily_cache_key()
 
-# ── Data ──────────────────────────────────────────────────────────────────────
+# ── Static weekly data ────────────────────────────────────────────────────────
 WEEKS = [
     {"key":"w1","label":"W1  —  18/02 – 22/02","total":120,"success":94, "failed":26,"bot":20,"captcha":2,"pdf":3,"generic":1},
     {"key":"w2","label":"W2  —  23/02 – 01/03","total":165,"success":137,"failed":28,"bot":22,"captcha":2,"pdf":3,"generic":1},
@@ -249,17 +271,18 @@ ALL_TIME = {
 ALL_DATA = WEEKS + [ALL_TIME]
 OPTIONS  = [w["label"] for w in ALL_DATA]
 
-avg_gen_time = 40
-if stats and stats.get("avg_gen_time"):
-    avg_gen_time = round(float(stats["avg_gen_time"]))
-
+avg_gen_time  = 40
 today_total   = 0
 today_success = 0
 today_failed  = 0
-if stats and stats.get("today"):
-    today_total   = int(stats["today"].get("total")   or 0)
-    today_success = int(stats["today"].get("success") or 0)
-    today_failed  = int(stats["today"].get("failed")  or 0)
+
+if stats:
+    if stats.get("avg_gen_time"):
+        avg_gen_time  = round(float(stats["avg_gen_time"]))
+    if stats.get("today"):
+        today_total   = int(stats["today"].get("total")   or 0)
+        today_success = int(stats["today"].get("success") or 0)
+        today_failed  = int(stats["today"].get("failed")  or 0)
 
 def get_data(label):
     return next(x for x in ALL_DATA if x["label"] == label)
@@ -414,11 +437,21 @@ if mode == "Single Period":
 
     st.divider()
 
-    # ── Top 5 Failing Sources — Live ─────────────────────────────────────────
-    st.markdown("**🚨 Top 5 Failing Sources — Live**")
+    # ── Top 5 Failing Sources ─────────────────────────────────────────────────
+    now        = datetime.now()
+    next_run   = now.replace(hour=16, minute=0, second=0, microsecond=0)
+    if now.hour >= 16:
+        from datetime import timedelta
+        next_run = next_run + timedelta(days=1)
+    hrs_until  = int((next_run - now).seconds / 3600)
+    mins_until = int(((next_run - now).seconds % 3600) / 60)
+    next_label = f"next update in {hrs_until}h {mins_until}m" if hrs_until > 0 else f"next update in {mins_until}m"
+    last_run   = "today at 16:00" if now.hour >= 16 else "yesterday at 16:00"
 
-    with st.spinner("Loading failing source data..."):
-        failing_sources = fetch_failing_sources()
+    st.markdown(f"**🚨 Top 5 Failing Sources** &nbsp;<span style='font-size:11px;color:{TEXT_MUTED};'>Updated daily at 16:00 · last updated {last_run} · {next_label}</span>", unsafe_allow_html=True)
+
+    with st.spinner("Loading source data..."):
+        failing_sources = fetch_failing_sources(cache_key)
 
     top5 = failing_sources[:5]
 
@@ -444,8 +477,8 @@ if mode == "Single Period":
     </td>
   </tr>"""
 
-        total_failures  = sum(c for _, c in failing_sources)
-        unique_sources  = len(failing_sources)
+        total_failures = sum(c for _, c in failing_sources)
+        unique_sources = len(failing_sources)
 
         st.markdown(f"""
 <table style="width:100%;border-collapse:collapse;font-size:13px;">
@@ -464,7 +497,7 @@ if mode == "Single Period":
 
         st.markdown(
             f'<p style="font-size:11px;color:{TEXT_MUTED};margin-top:8px;">'
-            f'Based on {total_failures} total failed articles across {unique_sources} unique sources · refreshes every 60s'
+            f'{total_failures} total failed articles across {unique_sources} unique sources'
             f'</p>',
             unsafe_allow_html=True
         )
@@ -475,7 +508,6 @@ if mode == "Single Period":
 
     # ── Footer cards ──────────────────────────────────────────────────────────
     f1, f2, f3 = st.columns(3)
-
     with f1:
         st.info(f"⚡ Pipeline Speed\n\nAverage {avg_gen_time} seconds per article. At {d['total']} articles that's ~**{processing_mins} minutes** of total processing time.")
     with f2:
@@ -559,16 +591,16 @@ else:
         else:
             return ("unchanged", "same")
 
-    vol_trend,  vol_cls  = trend(a["total"],    b["total"])
-    sr_trend,   sr_cls   = trend(sr_a,          sr_b)
-    er_trend,   er_cls   = trend(er_a,          er_b,          higher_is_better=False)
-    bot_trend,  bot_cls  = trend(a["bot"],      b["bot"],      higher_is_better=False)
-    pdf_trend,  pdf_cls  = trend(a["pdf"],      b["pdf"],      higher_is_better=False)
-    cap_trend,  cap_cls  = trend(a["captcha"],  b["captcha"],  higher_is_better=False)
+    vol_trend,  vol_cls  = trend(a["total"],   b["total"])
+    sr_trend,   sr_cls   = trend(sr_a,         sr_b)
+    er_trend,   er_cls   = trend(er_a,         er_b,         higher_is_better=False)
+    bot_trend,  bot_cls  = trend(a["bot"],     b["bot"],     higher_is_better=False)
+    pdf_trend,  pdf_cls  = trend(a["pdf"],     b["pdf"],     higher_is_better=False)
+    cap_trend,  cap_cls  = trend(a["captcha"], b["captcha"], higher_is_better=False)
 
     vol_diff = b["total"]   - a["total"]
-    sr_diff  = round(sr_b   - sr_a,  1)
-    er_diff  = round(er_b   - er_a,  1)
+    sr_diff  = round(sr_b   - sr_a, 1)
+    er_diff  = round(er_b   - er_a, 1)
     bot_diff = b["bot"]     - a["bot"]
     pdf_diff = b["pdf"]     - a["pdf"]
     cap_diff = b["captcha"] - a["captcha"]
